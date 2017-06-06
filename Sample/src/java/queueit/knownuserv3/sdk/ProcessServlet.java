@@ -34,7 +34,7 @@ public class ProcessServlet extends HttpServlet {
         // Here you also manually need to ensure that only the relevant page requests are validated
         // Also ensure that only page requests (and not e.g. image requests) are validated
         //if (isQueueItEnabled) {
-           // doValidationByLocalEventConfig(request, response); //Example of alternative implementation using local event configuration
+          // doValidationByLocalEventConfig(request, response); //Example of alternative implementation using local event configuration
         //}
     }
     
@@ -43,7 +43,7 @@ public class ProcessServlet extends HttpServlet {
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
-            String queueitToken = request.getParameter(KnownUser.QUEUEIT_TOKEN_KEY);
+            String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
             
             CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId);
@@ -58,7 +58,7 @@ public class ProcessServlet extends HttpServlet {
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-                if (queryString != null && queryString.contains(KnownUser.QUEUEIT_TOKEN_KEY)) {
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey)) {
                     response.sendRedirect(pureUrl);
                 }
             }
@@ -74,7 +74,7 @@ public class ProcessServlet extends HttpServlet {
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
-            String queueitToken = request.getParameter(KnownUser.QUEUEIT_TOKEN_KEY);
+            String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
             
             EventConfig eventConfig = new EventConfig();
@@ -95,7 +95,7 @@ public class ProcessServlet extends HttpServlet {
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-                if (queryString != null && queryString.contains(KnownUser.QUEUEIT_TOKEN_KEY)) {
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey)) {
                     response.sendRedirect(pureUrl);
                 }
             }
@@ -106,7 +106,7 @@ public class ProcessServlet extends HttpServlet {
     }
     
     private String getPureUrl(HttpServletRequest request){
-        Pattern pattern = Pattern.compile("([\\?&])(" + KnownUser.QUEUEIT_TOKEN_KEY + "=[^&]*)", Pattern.CASE_INSENSITIVE);
+        Pattern pattern = Pattern.compile("([\\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", Pattern.CASE_INSENSITIVE);
         String queryString = request.getQueryString();
         String url = request.getRequestURL().toString() + (queryString != null ? ("?" + queryString) : "");
 

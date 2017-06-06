@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package queueit.knownuserv3.sdk;
 
 import java.util.Objects;
@@ -23,7 +18,6 @@ public class UrlParameterProviderTest {
         assertTrue("218b734e-d5be-4b60-ad66-9b1b326266e2".equals(queueParameter.getHashCode()));
         assertTrue(Objects.equals(queueParameter.getQueueITToken(), queueitToken));
         assertTrue("ts_1480593661~cv_10~ce_false~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895~c_customerid~e_eventid~rt_disabled".equals(queueParameter.getQueueITTokenWithoutHash()));
-
     }
 
     @Test
@@ -32,10 +26,10 @@ public class UrlParameterProviderTest {
 
         QueueUrlParams queueParameter = QueueParameterHelper.extractQueueParams(queueitToken);
         assertTrue(queueParameter.getTimeStamp() == 0);
-        assertTrue(queueParameter.getEventId() == null);
+        assertTrue("".equals(queueParameter.getEventId()));
         assertTrue(queueParameter.getCookieValidityMinute() == null);
         assertTrue(queueParameter.getExtendableCookie() == false);
-        assertTrue(queueParameter.getHashCode() == null);
-        assertTrue(Objects.equals(queueParameter.getQueueITToken() , queueitToken));
+        assertTrue("".equals(queueParameter.getHashCode()));
+        assertTrue(Objects.equals(queueParameter.getQueueITToken(), queueitToken));
     }
 }

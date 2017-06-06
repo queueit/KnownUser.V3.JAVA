@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package queueit.knownuserv3.sdk;
 
 import java.util.HashMap;
@@ -10,10 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
-/**
- *
- * @author MOSA
- */
 public class UserInQueueStateCookieRepositoryTest {
 
     @Test
@@ -53,7 +44,6 @@ public class UserInQueueStateCookieRepositoryTest {
         assertTrue(Math.abs(System.currentTimeMillis() / 1000L + 10 * 60 - state.getExpires()) < 100);
         assertTrue((int) cookies.get(cookieKey).get("expiration") == 24 * 60 * 60);
         assertTrue(cookies.get(cookieKey).get("cookieDomain").equals(cookieDomain));
-
     }
 
     @Test
@@ -89,7 +79,6 @@ public class UserInQueueStateCookieRepositoryTest {
         cookies.replace(cookieKey, cookieString);
         state = testObject.getState(eventId, secretKey);
         assertFalse(state.isValid());
-
     }
 
     @Test
@@ -116,7 +105,6 @@ public class UserInQueueStateCookieRepositoryTest {
 
         StateInfo state = testObject.getState(eventId, secretKey);
         assertFalse(state.isValid());
-
     }
 
     @Test
@@ -147,7 +135,6 @@ public class UserInQueueStateCookieRepositoryTest {
 
         state = testObject.getState("event2", secretKey);
         assertFalse(state.isValid());
-
     }
 
     @Test
@@ -173,7 +160,6 @@ public class UserInQueueStateCookieRepositoryTest {
         testObject.store(eventId, queueId, false, cookieDomain, 10, secretKey);
         StateInfo state = testObject.getState(eventId, secretKey);
         assertFalse(state.isValid());
-
     }
 
     @Test
@@ -217,7 +203,6 @@ public class UserInQueueStateCookieRepositoryTest {
         assertTrue(cookies.get(cookieKey + "2").get("cookieValue") == null);
         assertTrue(cookies.get(cookieKey + "2").get("cookieDomain").equals("cookieDomain"));
         assertFalse(testObject.getState(eventId, secretKey).isValid());
-
     }
 
     @Test

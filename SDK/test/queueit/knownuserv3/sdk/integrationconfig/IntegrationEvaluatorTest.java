@@ -3,7 +3,6 @@ package queueit.knownuserv3.sdk.integrationconfig;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import javax.servlet.http.Cookie;
-import java.util.ArrayList;
 
 public class IntegrationEvaluatorTest {
 

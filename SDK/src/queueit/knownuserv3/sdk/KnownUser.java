@@ -7,27 +7,47 @@ import queueit.knownuserv3.sdk.integrationconfig.*;
 
 public class KnownUser {
 
-    public static final String QUEUEIT_TOKEN_KEY = "queueittoken";
+    public static final String QueueITTokenKey = "queueittoken";
+    private static IUserInQueueService _userInQueueService;
+
+    private static IUserInQueueService createUserInQueueService(HttpServletRequest request, HttpServletResponse response) {
+        if (_userInQueueService == null) {
+            return new UserInQueueService(new UserInQueueStateCookieRepository(new CookieManager(request, response)));
+        }
+
+        return _userInQueueService;
+    }
+
+    /**
+     * Use for supplying explicit mock for testing purpose.
+     */
+    static void setUserInQueueService(IUserInQueueService mockUserInQueueService) {
+        _userInQueueService = mockUserInQueueService;
+    }
 
     public static RequestValidationResult validateRequestByIntegrationConfig(String currentUrlWithoutQueueITToken,
             String queueitToken, CustomerIntegration customerIntegrationInfo,
             String customerId, HttpServletRequest request,
             HttpServletResponse response, String secretKey) throws Exception {
 
+        if (Utils.isNullOrWhiteSpace(currentUrlWithoutQueueITToken)) {
+            throw new Exception("currentUrlWithoutQueueITToken can not be null or empty.");
+        }
         if (customerIntegrationInfo == null) {
             throw new KnowUserException("customerIntegrationInfo can not be null.");
         }
+        Cookie[] cookies = request != null ? request.getCookies() : new Cookie[0];        
         IntegrationEvaluator configEvaluater = new IntegrationEvaluator();
-        IntegrationConfigModel matchedConfig
-                = configEvaluater.getMatchedIntegrationConfig(customerIntegrationInfo, currentUrlWithoutQueueITToken,
-                        request.getCookies());
+        IntegrationConfigModel matchedConfig = configEvaluater.getMatchedIntegrationConfig(
+                customerIntegrationInfo, currentUrlWithoutQueueITToken, cookies);
         if (matchedConfig == null) {
             return new RequestValidationResult(null, null, null);
         }
 
         String targetUrl;
         switch (matchedConfig.RedirectLogic) {
-            case "ForecedTargetUrl":
+            case "ForecedTargetUrl": // suuport for typo (fall through)
+            case "ForcedTargetUrl":
                 targetUrl = matchedConfig.ForcedTargetUrl;
                 break;
             case "EventTargetUrl":
@@ -54,6 +74,7 @@ public class KnownUser {
     public static RequestValidationResult validateRequestByLocalEventConfig(String targetUrl, String queueitToken, EventConfig eventConfig,
             String customerId, HttpServletRequest request,
             HttpServletResponse response, String secretKey) throws Exception {
+        
         if (Utils.isNullOrWhiteSpace(customerId)) {
             throw new Exception("customerId can not be null or empty.");
         }
@@ -64,19 +85,19 @@ public class KnownUser {
             throw new Exception("eventConfig can not be null.");
         }
         if (Utils.isNullOrWhiteSpace(eventConfig.getEventId())) {
-            throw new Exception("EventId can not be null or empty.");
+            throw new Exception("EventId from eventConfig can not be null or empty.");
         }
         if (Utils.isNullOrWhiteSpace(eventConfig.getQueueDomain())) {
-            throw new Exception("QueueDomain can not be null or empty.");
+            throw new Exception("QueueDomain from eventConfig can not be null or empty.");
         }
         if (eventConfig.getCookieValidityMinute() <= 0) {
-            eventConfig.setCookieValidityMinute(10);
+            throw new Exception("cookieValidityMinute from eventConfig should be greater than 0.");
         }
         if (queueitToken == null) {
             queueitToken = "";
         }
-        
-        UserInQueueService userInQueueService = new UserInQueueService(new UserInQueueStateCookieRepository(new CookieManager(request, response)));
+
+        IUserInQueueService userInQueueService = createUserInQueueService(request, response);
         return userInQueueService.validateRequest(targetUrl, queueitToken, eventConfig, customerId, secretKey);
     }
 
@@ -88,22 +109,29 @@ public class KnownUser {
         if (Utils.isNullOrWhiteSpace(eventId)) {
             throw new Exception("eventId can not be null or empty.");
         }
-        UserInQueueService userInQueueService = new UserInQueueService(new UserInQueueStateCookieRepository(new CookieManager(request, response)));
-
+        
+        IUserInQueueService userInQueueService = createUserInQueueService(request, response);
         userInQueueService.cancelQueueCookie(eventId, cookieDomain);
     }
 
-    public static void ExtendQueueCookie(String eventId,
+    public static void extendQueueCookie(String eventId,
             int cookieValidityMinute,
             String cookieDomain,
             HttpServletRequest request,
             HttpServletResponse response,
             String secretKey) throws Exception {
-
+        
         if (Utils.isNullOrWhiteSpace(eventId)) {
             throw new Exception("eventId can not be null or empty.");
         }
-        UserInQueueService userInQueueService = new UserInQueueService(new UserInQueueStateCookieRepository(new CookieManager(request, response)));
+        if (cookieValidityMinute <= 0) {
+            throw new Exception("cookieValidityMinute should be greater than 0.");
+        }
+        if (Utils.isNullOrWhiteSpace(secretKey)) {
+            throw new Exception("secretKey can not be null or empty.");
+        }
+        
+        IUserInQueueService userInQueueService = createUserInQueueService(request, response);
         userInQueueService.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
     }
 }
@@ -128,9 +156,10 @@ class CookieManager implements ICookieManager {
         cookie.setValue(cookieValue);
         cookie.setMaxAge(expiration);
         cookie.setPath("/");
-        if(!Utils.isNullOrWhiteSpace(cookieDomain))
+        if (!Utils.isNullOrWhiteSpace(cookieDomain)) {
             cookie.setDomain(cookieDomain);
-       
+        }
+
         cookie.setHttpOnly(true);
         response.addCookie(cookie);
     }
@@ -138,9 +167,10 @@ class CookieManager implements ICookieManager {
     @Override
     public String getCookie(String cookieName) {
         Cookie[] cookies = request.getCookies();
-        if(cookies == null)
+        if (cookies == null) {
             return null;
-        
+        }
+
         for (Cookie cookie : cookies) {
             if (cookie.getName().equals(cookieName)) {
                 return cookie.getValue();

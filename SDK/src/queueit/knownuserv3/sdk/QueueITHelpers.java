@@ -30,15 +30,15 @@ class Utils {
 
 class QueueParameterHelper {
 
-    public static final String TIME_STAMP_KEY = "ts";
-    public static final String EXTENDABLE_COOKIE_KEY = "ce";
-    public static final String COOKIE_VALIDITY_MINUTE_KEY = "cv";
-    public static final String HASH_KEY = "h";
-    public static final String QUEUE_ID_KEY = "q";
+    public static final String TimeStampKey = "ts";
+    public static final String ExtendableCookieKey = "ce";
+    public static final String CookieValidityMinuteKey = "cv";
+    public static final String HashKey = "h";
+    public static final String QueueIdKey = "q";
 
-    public static final String EVENT_ID_KEY = "e";
-    public static final String KEY_VALUE_SEPARATOR_CHAR = "_";
-    public static final String KEY_VALUE_SEPARATPR_GROUP_KEY = "~";
+    public static final String EventIdKey = "e";
+    public static final String KeyValueSeparatorChar = "_";
+    public static final String KeyValueSeparatorGroupChar = "~";
 
     public static QueueUrlParams extractQueueParams(String queueitToken) {
         try {
@@ -49,19 +49,19 @@ class QueueParameterHelper {
             QueueUrlParams result = new QueueUrlParams();
             result.setQueueITToken(queueitToken);
 
-            String[] paramList = queueitToken.split(KEY_VALUE_SEPARATPR_GROUP_KEY);
+            String[] paramList = queueitToken.split(KeyValueSeparatorGroupChar);
             for (String paramKeyValue : paramList) {
-                String[] keyValueArr = paramKeyValue.split(KEY_VALUE_SEPARATOR_CHAR);
+                String[] keyValueArr = paramKeyValue.split(KeyValueSeparatorChar);
 
                 switch (keyValueArr[0]) {
-                    case TIME_STAMP_KEY:
+                    case TimeStampKey:
                         if (Utils.isLong(keyValueArr[1])) {
                             result.setTimeStamp(Long.parseLong(keyValueArr[1]));
                         } else {
                             result.setTimeStamp(0);
                         }
                         break;
-                    case COOKIE_VALIDITY_MINUTE_KEY: {
+                    case CookieValidityMinuteKey: {
                         if (Utils.isInteger(keyValueArr[1])) {
                             result.setCookieValidityMinute(Integer.parseInt(keyValueArr[1]));
                         } else {
@@ -70,24 +70,24 @@ class QueueParameterHelper {
                         break;
                     }
 
-                    case EVENT_ID_KEY:
+                    case EventIdKey:
                         result.setEventId(keyValueArr[1]);
                         break;
-                    case QUEUE_ID_KEY:
+                    case QueueIdKey:
                         result.setQueueId(keyValueArr[1]);
                         break;
-                    case EXTENDABLE_COOKIE_KEY: {
+                    case ExtendableCookieKey: {
 
                         result.setExtendableCookie(Boolean.parseBoolean(keyValueArr[1]));
                         break;
                     }
-                    case HASH_KEY:
+                    case HashKey:
                         result.setHashCode(keyValueArr[1]);
                         break;
 
                 }
             }
-            String queueITTokenWithoutHash = result.getQueueITToken().replace(KEY_VALUE_SEPARATPR_GROUP_KEY + HASH_KEY + KEY_VALUE_SEPARATOR_CHAR + result.getHashCode(), "");
+            String queueITTokenWithoutHash = result.getQueueITToken().replace(KeyValueSeparatorGroupChar + HashKey + KeyValueSeparatorChar + result.getHashCode(), "");
             result.setQueueITTokenWithoutHash(queueITTokenWithoutHash);
             return result;
         } catch (Exception ex) {
@@ -125,6 +125,17 @@ class QueueUrlParams {
     private long timeStamp;
     private String queueId;
 
+    public QueueUrlParams(){
+        this.eventId = "";
+        this.hashCode = "";
+        this.extendableCookie = false;
+        this.queueITToken = "";
+        this.queueITTokenWithoutHash = "";
+        this.cookieValidityMinute = null;
+        this.timeStamp = 0;
+        this.queueId = "";
+    }
+    
     public String getEventId() {
         return this.eventId;
     }

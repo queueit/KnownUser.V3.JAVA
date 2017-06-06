@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package queueit.knownuserv3.sdk;
 
 import java.util.HashMap;
@@ -41,14 +36,14 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
     private static final String HASH_KEY = "Hash";
     private static final String EXPIRES_KEY = "Expires";
 
-    private final ICookieManager cookieManeger;
+    private final ICookieManager cookieManager;
 
     public static String getCookieKey(String eventId) {
         return QUEUEIT_DATA_KEY + "_" + eventId;
     }
 
     public UserInQueueStateCookieRepository(ICookieManager cookieManeger) {
-        this.cookieManeger = cookieManeger;
+        this.cookieManager = cookieManeger;
     }
 
     @Override
@@ -67,10 +62,8 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
 
         String cookieValue = createCookieValue(queueId, isStateExtendableString, String.valueOf(expirationTime), secretKey);
 
-        this.cookieManeger.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain);
+        this.cookieManager.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain);
     }
-
-
 
     private String createCookieValue(String queueId, String isStateExtendable, String expirationTime, String secretKey) throws Exception {
         String hashValue = HashHelper.generateSHA256Hash(secretKey, queueId
@@ -83,8 +76,7 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
 
     private Boolean isCookieValid(
             HashMap<String, String> cookieNameValueMap,
-            String secretKey
-    ) {
+            String secretKey) {
         try {
             if (!cookieNameValueMap.containsKey(IS_COOKIE_EXTENDABLE_KEY)
                     || Utils.isNullOrWhiteSpace(IS_COOKIE_EXTENDABLE_KEY)) {
@@ -118,7 +110,6 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
         } catch (Exception ex) {
         }
         return true;
-
     }
 
     public static HashMap<String, String> getCookieNameValueMap(String cookieValue) {
@@ -141,22 +132,22 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
     public StateInfo getState(String eventId, String secretKey) {
         try {
             String cookieKey = getCookieKey(eventId);
-            String cookieValue = this.cookieManeger.getCookie(cookieKey);
+            String cookieValue = this.cookieManager.getCookie(cookieKey);
             if (cookieValue == null) {
-                return new StateInfo(false, null, false,0);
+                return new StateInfo(false, null, false, 0);
             }
             HashMap<String, String> cookieNameValueMap = UserInQueueStateCookieRepository.getCookieNameValueMap(cookieValue);
             if (!isCookieValid(cookieNameValueMap, secretKey)) {
-                return new StateInfo(false, null, false,0);
+                return new StateInfo(false, null, false, 0);
             }
 
             return new StateInfo(true, cookieNameValueMap.get(QUEUE_ID_KEY),
                     Boolean.parseBoolean(cookieNameValueMap.get(IS_COOKIE_EXTENDABLE_KEY)),
-            Long.parseLong(cookieNameValueMap.get(EXPIRES_KEY)));
-        } catch (Exception ex) {
+                    Long.parseLong(cookieNameValueMap.get(EXPIRES_KEY)));
+        } catch (NumberFormatException ex) {
 
         }
-        return new StateInfo(false, null, false,0);
+        return new StateInfo(false, null, false, 0);
     }
 
     @Override
@@ -164,19 +155,20 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
             String eventId,
             String cookieDomain) {
         String cookieKey = getCookieKey(eventId);
-        if (cookieManeger.getCookie(cookieKey) != null) {
-            cookieManeger.setCookie(cookieKey, null, 0, cookieDomain);
+        if (cookieManager.getCookie(cookieKey) != null) {
+            cookieManager.setCookie(cookieKey, null, 0, cookieDomain);
         }
     }
+
     @Override
-        public void extendQueueCookie(
+    public void extendQueueCookie(
             String eventId,
             int cookieValidityMinute,
             String cookieDomain,
             String secretKey) {
         try {
             String cookieKey = getCookieKey(eventId);
-            String cookieValueOld = this.cookieManeger.getCookie(cookieKey);
+            String cookieValueOld = this.cookieManager.getCookie(cookieKey);
             if (cookieValueOld == null) {
                 return;
             }
@@ -187,12 +179,10 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
             long expirationTime = System.currentTimeMillis() / 1000L + cookieValidityMinute * 60;
             String cookieValue = createCookieValue(cookieNameValueMap.get(QUEUE_ID_KEY), cookieNameValueMap.get(IS_COOKIE_EXTENDABLE_KEY),
                     String.valueOf(expirationTime), secretKey);
-            this.cookieManeger.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain);
+            this.cookieManager.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain);
         } catch (Exception ex) {
-
         }
     }
-
 }
 
 interface ICookieManager {
@@ -208,7 +198,6 @@ class StateInfo {
     private final String queueId;
     private final boolean isStateExtendable;
     private final long expires;
-
 
     public StateInfo(boolean isValid, String queueid, boolean isStateExtendable, long expires /*used in tests*/) {
         this.isValid = isValid;
@@ -228,7 +217,7 @@ class StateInfo {
     public boolean isStateExtendable() {
         return this.isStateExtendable;
     }
-    
+
     //used in tests
     public long getExpires() {
         return this.expires;

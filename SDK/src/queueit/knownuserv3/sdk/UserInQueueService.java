@@ -18,15 +18,14 @@ interface IUserInQueueService {
     void extendQueueCookie(
             String eventId,
             int cookieValidityMinute,
-             String cookieDomain,
+            String cookieDomain,
             String secretKey
     );
-
 }
 
 class UserInQueueService implements IUserInQueueService {
 
-    private static final String SDK_VERSION = "1.0.0.0";
+    public static final String SDK_VERSION = "1.0.0.0";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(
@@ -58,13 +57,13 @@ class UserInQueueService implements IUserInQueueService {
         QueueUrlParams queueParmas = QueueParameterHelper.extractQueueParams(queueitToken);
 
         if (queueParmas != null) {
-            return GetQueueITTokenValidationResult(targetUrl, config.getEventId(), config, queueParmas, customerId, secretKey);
+            return getQueueITTokenValidationResult(targetUrl, config.getEventId(), config, queueParmas, customerId, secretKey);
         } else {
-            return GetInQueueRedirectResult(targetUrl, config, customerId);
+            return getInQueueRedirectResult(targetUrl, config, customerId);
         }
     }
 
-    private RequestValidationResult GetQueueITTokenValidationResult(
+    private RequestValidationResult getQueueITTokenValidationResult(
             String targetUrl,
             String eventId,
             EventConfig config,
@@ -72,16 +71,16 @@ class UserInQueueService implements IUserInQueueService {
             String customerId,
             String secretKey) throws Exception {
         String calculatedHash = HashHelper.generateSHA256Hash(secretKey, queueParams.getQueueITTokenWithoutHash());
-        if (!Objects.equals(calculatedHash.toUpperCase(),queueParams.getHashCode().toUpperCase())) {
-            return GetVaidationErrorResult(customerId, targetUrl, config, queueParams, "hash");
+        if (!Objects.equals(calculatedHash.toUpperCase(), queueParams.getHashCode().toUpperCase())) {
+            return getVaidationErrorResult(customerId, targetUrl, config, queueParams, "hash");
         }
 
-        if (!Objects.equals(queueParams.getEventId().toUpperCase(),eventId.toUpperCase())) {
-            return GetVaidationErrorResult(customerId, targetUrl, config, queueParams, "eventid");
+        if (!Objects.equals(queueParams.getEventId().toUpperCase(), eventId.toUpperCase())) {
+            return getVaidationErrorResult(customerId, targetUrl, config, queueParams, "eventid");
         }
 
         if (queueParams.getTimeStamp() < System.currentTimeMillis() / 1000L) {
-            return GetVaidationErrorResult(customerId, targetUrl, config, queueParams, "timestamp");
+            return getVaidationErrorResult(customerId, targetUrl, config, queueParams, "timestamp");
         }
 
         this._userInQueueStateRepository.store(
@@ -95,14 +94,14 @@ class UserInQueueService implements IUserInQueueService {
         return new RequestValidationResult(config.getEventId(), queueParams.getQueueId(), null);
     }
 
-    private RequestValidationResult GetVaidationErrorResult(
+    private RequestValidationResult getVaidationErrorResult(
             String customerId,
             String targetUrl,
             EventConfig config,
             QueueUrlParams qParams,
             String errorCode) throws Exception {
 
-        String query = GetQueryString(customerId, config)
+        String query = getQueryString(customerId, config)
                 + "&queueittoken=" + qParams.getQueueITToken()
                 + "&ts=" + System.currentTimeMillis() / 1000L
                 + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
@@ -112,21 +111,20 @@ class UserInQueueService implements IUserInQueueService {
         }
         String redirectUrl = "https://" + domainAlias + "error/" + errorCode + "?" + query;
         return new RequestValidationResult(config.getEventId(), null, redirectUrl);
-
     }
 
-    private RequestValidationResult GetInQueueRedirectResult(
+    private RequestValidationResult getInQueueRedirectResult(
             String targetUrl,
             EventConfig config,
             String customerId) throws Exception {
 
         String redirectUrl = "https://" + config.getQueueDomain() + "?"
-                + GetQueryString(customerId, config)
+                + getQueryString(customerId, config)
                 + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
         return new RequestValidationResult(config.getEventId(), null, redirectUrl);
     }
 
-    private String GetQueryString(
+    private String getQueryString(
             String customerId,
             EventConfig config) throws Exception {
         ArrayList<String> queryStringList = new ArrayList<>();
@@ -145,9 +143,9 @@ class UserInQueueService implements IUserInQueueService {
 
         return String.join("&", queryStringList);
     }
-    
+
     @Override
-    public void cancelQueueCookie(String eventId,  String cookieDomain)  {
+    public void cancelQueueCookie(String eventId, String cookieDomain) {
         this._userInQueueStateRepository.cancelQueueCookie(eventId, cookieDomain);
     }
 
@@ -155,8 +153,8 @@ class UserInQueueService implements IUserInQueueService {
     public void extendQueueCookie(
             String eventId,
             int cookieValidityMinute,
-             String cookieDomain,
+            String cookieDomain,
             String secretKey) {
-        this._userInQueueStateRepository.extendQueueCookie(eventId, cookieValidityMinute,cookieDomain, secretKey);
+        this._userInQueueStateRepository.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
     }
 }

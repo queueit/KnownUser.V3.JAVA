@@ -130,7 +130,7 @@ class UserInQueueService implements IUserInQueueService {
         ArrayList<String> queryStringList = new ArrayList<>();
         queryStringList.add("c=" + URLEncoder.encode(customerId, "UTF-8"));
         queryStringList.add("e=" + URLEncoder.encode(config.getEventId(), "UTF-8"));
-        queryStringList.add("ver=v3-" + URLEncoder.encode(SDK_VERSION, "UTF-8"));
+        queryStringList.add("ver=v3-java-" + URLEncoder.encode(SDK_VERSION, "UTF-8"));
         queryStringList.add("cver=" + URLEncoder.encode(String.valueOf(config.getVersion()), "UTF-8"));
 
         if (!Utils.isNullOrWhiteSpace(config.getCulture())) {

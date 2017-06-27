@@ -508,6 +508,57 @@ public class UserInQueueServiceTest {
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(config.getEventId().equals(result.getEventId()));
     }
+    
+        @Test
+    public void ValidateRequest_NoCookie_WithoutToken_RedirectToQueue_NoTargetUrl() throws Exception {
+        EventConfig config = new EventConfig();
+        config.setEventId("e1");
+        config.setQueueDomain("testDomain.com");
+        config.setCookieValidityMinute(10);
+        config.setExtendCookieValidity(false);
+        config.setLayoutName("testlayout");
+        config.setVersion(10);
+
+        HashMap<String, Boolean> conditions = new HashMap<>();
+        conditions.put("isStoreWasCalled", false);
+
+        IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
+            @Override
+            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
+                conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, String customerSecretKey) {
+                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
+
+            }
+
+            @Override
+            public void cancelQueueCookie(String eventId, String cookieDomain) {
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+        };
+
+        
+        String knownUserVersion = UserInQueueService.SDK_VERSION;
+        String expectedErrorUrl = "https://testDomain.com?c=testCustomer&e=e1"
+                + "&ver=v3-java-" + knownUserVersion
+                + "&cver=10"
+                + "&l=" + config.getLayoutName();
+
+        UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
+        RequestValidationResult result = testObject.validateRequest(null, "", config, "testCustomer", "key");
+        assertTrue(result.doRedirect());
+        assertTrue(result.getRedirectUrl().toUpperCase().equals(expectedErrorUrl.toUpperCase()));
+        assertTrue(!conditions.get("isStoreWasCalled"));
+        assertTrue(config.getEventId().equals(result.getEventId()));
+    }
 
     @Test
     public void ValidateRequest_NoCookie_InValidToken() throws Exception {

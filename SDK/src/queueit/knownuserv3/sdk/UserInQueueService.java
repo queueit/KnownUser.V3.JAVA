@@ -103,8 +103,11 @@ class UserInQueueService implements IUserInQueueService {
 
         String query = getQueryString(customerId, config)
                 + "&queueittoken=" + qParams.getQueueITToken()
-                + "&ts=" + System.currentTimeMillis() / 1000L
-                + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
+                + "&ts=" + System.currentTimeMillis() / 1000L;
+        if(!Utils.isNullOrWhiteSpace(targetUrl))
+        {
+            query += "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
+        }
         String domainAlias = config.getQueueDomain();
         if (!domainAlias.endsWith("/")) {
             domainAlias = domainAlias + "/";
@@ -119,8 +122,12 @@ class UserInQueueService implements IUserInQueueService {
             String customerId) throws Exception {
 
         String redirectUrl = "https://" + config.getQueueDomain() + "?"
-                + getQueryString(customerId, config)
-                + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
+                + getQueryString(customerId, config);
+        if(!Utils.isNullOrWhiteSpace(targetUrl))
+        {
+            redirectUrl += "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
+        }
+                
         return new RequestValidationResult(config.getEventId(), null, redirectUrl);
     }
 

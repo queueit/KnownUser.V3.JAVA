@@ -192,16 +192,16 @@ public class UserInQueueServiceTest {
         String queueitToken = QueueITTokenGenerator.generateToken(new Date(), "e1", false, 20, customerKey);
         queueitToken = queueitToken.replace("false", "true");
 
-        String currentUrl = "http://test.test.com?b=h";
+        String targetUrl = "http://test.test.com?b=h";
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedErrorUrl = "https://testDomain.com/error/hash?c=testCustomer&e=e1"
                 + "&ver=v3-java-" + knownUserVersion
                 + "&cver=100"
                 + "&queueittoken=" + queueitToken
-                + "&t=" + URLEncoder.encode(currentUrl, "UTF-8");
+                + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(currentUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(result.doRedirect());
 
         Pattern pattern = Pattern.compile("&ts=[^&]*");
@@ -257,16 +257,16 @@ public class UserInQueueServiceTest {
         date.setTime(date.getTime() - 1000 * 60 * 60);
         String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, 20, customerKey);
 
-        String currentUrl = "http://test.test.com?b=h";
+        String targetUrl = "http://test.test.com?b=h";
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedErrorUrl = "https://testDomain.com/error/timestamp?c=testCustomer&e=e1"
                 + "&ver=v3-java-" + knownUserVersion
                 + "&cver=100"
                 + "&queueittoken=" + queueitToken
-                + "&t=" + URLEncoder.encode(currentUrl, "UTF-8");
+                + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(currentUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(result.doRedirect());
 
         Pattern pattern = Pattern.compile("&ts=[^&]*");
@@ -322,16 +322,16 @@ public class UserInQueueServiceTest {
         date.setTime(date.getTime() + 1000 * 60 * 60);
         String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, null, customerKey);
 
-        String currentUrl = "http://test.test.com?b=h";
+        String targetUrl = "http://test.test.com?b=h";
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedErrorUrl = "https://testDomain.com/error/eventid?c=testCustomer&e=e2"
                 + "&ver=v3-java-" + knownUserVersion
                 + "&cver=10"
                 + "&queueittoken=" + queueitToken
-                + "&t=" + URLEncoder.encode(currentUrl, "UTF-8");
+                + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(currentUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(result.doRedirect());
 
         Pattern pattern = Pattern.compile("&ts=[^&]*");
@@ -391,10 +391,10 @@ public class UserInQueueServiceTest {
         date.setTime(date.getTime() + 1000 * 60 * 60);
         String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, null, customerKey);
 
-        String currentUrl = "http://test.test.com?b=h";
+        String targetUrl = "http://test.test.com?b=h";
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(currentUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("eventId").equals(config.getEventId()));
         assertTrue(callInfo.get("firstCall").get("isStateExtendable").equals(true));
@@ -444,10 +444,10 @@ public class UserInQueueServiceTest {
         };
 
         String queueitToken = "e_eventid~q_f8757c2d-34c2-4639-bef2-1736cdd30bbb~ri_34678c2d-34c2-4639-bef2-1736cdd30bbb~ts_1797033600~ce_False~cv_3~rt_DirectLink~h_5ee2babc3ac9fae9d80d5e64675710c371876386e77209f771007dc3e093e326";
-        String currentUrl = "http://test.test.com?b=h";
+        String targetUrl = "http://test.test.com?b=h";
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(currentUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("eventId").equals(config.getEventId()));
         assertTrue(callInfo.get("firstCall").get("isStateExtendable").equals(false));
@@ -493,23 +493,23 @@ public class UserInQueueServiceTest {
             }
         };
 
-        String currentUrl = "http://test.test.com?b=h";
+        String targetUrl = "http://test.test.com?b=h";
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedErrorUrl = "https://testDomain.com?c=testCustomer&e=e1"
                 + "&ver=v3-java-" + knownUserVersion
                 + "&cver=10"
                 + "&l=" + config.getLayoutName()
-                + "&t=" + URLEncoder.encode(currentUrl, "UTF-8");
+                + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(currentUrl, "", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateRequest(targetUrl, "", config, "testCustomer", "key");
         assertTrue(result.doRedirect());
         assertTrue(result.getRedirectUrl().toUpperCase().equals(expectedErrorUrl.toUpperCase()));
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(config.getEventId().equals(result.getEventId()));
     }
     
-        @Test
+    @Test
     public void ValidateRequest_NoCookie_WithoutToken_RedirectToQueue_NoTargetUrl() throws Exception {
         EventConfig config = new EventConfig();
         config.setEventId("e1");
@@ -596,16 +596,16 @@ public class UserInQueueServiceTest {
             }
         };
 
-        String currentUrl = "http://test.test.com?b=h";
+        String targetUrl = "http://test.test.com?b=h";
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedErrorUrl = "https://testDomain.com?c=testCustomer&e=e1"
                 + "&ver=v3-" + knownUserVersion
                 + "&cver=10"
                 + "&l=" + config.getLayoutName()
-                + "&t=" + URLEncoder.encode(currentUrl, "UTF-8");
+                + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(currentUrl, "ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateRequest(targetUrl, "ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895", config, "testCustomer", "key");
         assertTrue(result.doRedirect());
         assertTrue(result.getRedirectUrl().startsWith("https://testDomain.com/error/hash?c=testCustomer&e=e1&ver=v3-java-" + knownUserVersion + "&cver=10&l=testlayout&queueittoken=ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895&"));
         assertTrue(!conditions.get("isStoreWasCalled"));

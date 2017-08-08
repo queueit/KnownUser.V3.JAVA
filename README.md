@@ -57,7 +57,9 @@ The following method is all that is needed to validate that a user has been thro
 
             String queueitToken = request.getParameter(KnownUser.QUEUEIT_TOKEN_KEY);
             String pureUrl = getPureUrl(request);
-            
+            // The pureUrl is used to match Triggers and as the Target url (where to return the users to)
+            // It is therefor important that the pureUrl is exactly the url of the users browsers. So if your webserver is 
+            // e.g. behind a load balancer that modifies the host name or port, reformat the pureUrl before proceeding
             CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId);
 
             //Verify if the user has been through the queue

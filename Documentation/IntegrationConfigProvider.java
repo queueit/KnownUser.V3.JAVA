@@ -1,4 +1,4 @@
-package queueit.knownuserv3.sdk;
+package queueit.knownuserv3.sample;
 
 import com.google.gson.Gson;
 import java.io.BufferedReader;
@@ -46,8 +46,8 @@ final class IntegrationConfigProvider {
         int tryCount = 0;
 
         while (tryCount < 5) {
-            long timeBaseQueryString = (System.currentTimeMillis() / 1000L);
-            String configUrl = String.format("https://assets.queue-it.net/%s/integrationconfig/json/integrationInfo.json?qr=%s", customerId, timeBaseQueryString);
+            long timeBaseQueryString = (System.currentTimeMillis() / 1000L);            
+            String configUrl = String.format("https://%s.queue-it.net/status/integrationconfig/%s?qr=%s", customerId, customerId, timeBaseQueryString);
 
             try {
                 String jsonText = getJsonText(configUrl);

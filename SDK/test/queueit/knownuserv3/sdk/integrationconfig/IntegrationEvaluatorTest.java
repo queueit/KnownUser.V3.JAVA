@@ -44,7 +44,7 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
         Cookie [] cookies = new Cookie [0];
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url,  cookies);
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url,  cookies, "");
         assertTrue(result == null);
     }
 
@@ -90,7 +90,7 @@ public class IntegrationEvaluatorTest {
         Cookie [] cookies = new Cookie [1];
         cookies[0]=new Cookie("c1", "value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url,  cookies);
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url,  cookies, "");
         assertTrue(result.Name.equals("integration1"));
     }
 
@@ -137,7 +137,7 @@ public class IntegrationEvaluatorTest {
          Cookie [] cookies = new Cookie [1];
         cookies[0] = new Cookie("c2", "value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies);
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies, "");
         assertTrue(result == null);
     }
 
@@ -182,7 +182,7 @@ public class IntegrationEvaluatorTest {
        Cookie [] cookies = new Cookie [1];
         cookies[0]= new Cookie("c1", "value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies);
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies, "");
         assertTrue(result.Name.equals("integration1"));
     }
 
@@ -233,7 +233,7 @@ public class IntegrationEvaluatorTest {
         String url = "http://test.tesdomain.com:8080/test?q=2";
         Cookie [] cookies = new Cookie [0];
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies);
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies, "");
         assertTrue(result.Name.equals("integration1"));
     }
 
@@ -284,7 +284,7 @@ public class IntegrationEvaluatorTest {
         String url = "http://test.tesdomain.com:8080/test?q=2";
        Cookie [] cookies = new Cookie [0];
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies);
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies, "");
         assertTrue(result == null);
     }
 
@@ -364,7 +364,62 @@ public class IntegrationEvaluatorTest {
         Cookie [] cookies = new Cookie [1];
         cookies[0]= new Cookie("c1", "Value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies);
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, cookies, "");
         assertTrue(result.Name.equals("integration1"));
     }
+    
+            @Test
+        public void GetMatchedIntegrationConfig_OneTrigger_And_NotMatched_UserAgent()
+        {
+         IntegrationEvaluator testObject = new IntegrationEvaluator();
+
+        TriggerPart triggerPart1 = new TriggerPart();
+        triggerPart1.ValidatorType = ValidatorType.COOKIE_VALIDATOR;
+        triggerPart1.Operator = ComparisonOperatorType.EQUALS;
+        triggerPart1.IsIgnoreCase = true;
+        triggerPart1.ValueToCompare = "value1";
+        triggerPart1.CookieName = "c1";
+
+        TriggerPart triggerPart2 = new TriggerPart();
+        triggerPart2.ValidatorType = ValidatorType.URL_VALIDATOR;
+        triggerPart2.Operator = ComparisonOperatorType.CONTAINS;
+        triggerPart2.UrlPart = UrlPartType.PAGE_URL;
+        triggerPart2.ValueToCompare = "test";
+        
+        TriggerPart triggerPart3 = new TriggerPart();
+        triggerPart3.ValidatorType = ValidatorType.USERAGENT_VALIDATOR;
+        triggerPart3.Operator = ComparisonOperatorType.CONTAINS;
+        triggerPart3.ValueToCompare = "googlebot";
+        triggerPart3.IsNegative= true;
+        triggerPart3.IsIgnoreCase = true;
+
+        TriggerPart[] triggerParts = new TriggerPart[3];
+        triggerParts[0] = triggerPart1;
+        triggerParts[1] = triggerPart2;
+        triggerParts[2] = triggerPart3;
+
+        TriggerModel triggerModel = new TriggerModel();
+        triggerModel.LogicalOperator = LogicalOperatorType.AND;
+        triggerModel.TriggerParts = triggerParts;
+
+        TriggerModel[] triggerModels = new TriggerModel[1];
+        triggerModels[0] = triggerModel;
+
+        IntegrationConfigModel integrationConfigModel = new IntegrationConfigModel();
+        integrationConfigModel.Name = "integration1";
+        integrationConfigModel.Triggers = triggerModels;
+
+        IntegrationConfigModel[] integrationConfigModels = new IntegrationConfigModel[1];
+        integrationConfigModels[0] = integrationConfigModel;
+
+        CustomerIntegration customerIntegration = new CustomerIntegration();
+        customerIntegration.Integrations = integrationConfigModels;
+
+        String url = "http://test.tesdomain.com:8080/test?q=2";
+        Cookie [] cookies = new Cookie [1];
+        cookies[0]=new Cookie("c1", "value1");
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url,  cookies, "Googlebot");
+        assertTrue(result == null);
+        }
 }

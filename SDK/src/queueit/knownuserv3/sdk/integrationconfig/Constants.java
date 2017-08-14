@@ -4,6 +4,7 @@ final class ValidatorType {
 
     public static final String URL_VALIDATOR = "UrlValidator";
     public static final String COOKIE_VALIDATOR = "CookieValidator";
+    public static final String USERAGENT_VALIDATOR = "UserAgentValidator";
 }
 
 final class UrlPartType {

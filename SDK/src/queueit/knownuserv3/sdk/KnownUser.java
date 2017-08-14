@@ -1,9 +1,9 @@
 package queueit.knownuserv3.sdk;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import queueit.knownuserv3.sdk.integrationconfig.*;
+
 
 public class KnownUser {
 
@@ -38,8 +38,9 @@ public class KnownUser {
         }
         Cookie[] cookies = request != null ? request.getCookies() : new Cookie[0];        
         IntegrationEvaluator configEvaluater = new IntegrationEvaluator();
+        String userAgent = request.getHeader("User-Agent");
         IntegrationConfigModel matchedConfig = configEvaluater.getMatchedIntegrationConfig(
-                customerIntegrationInfo, currentUrlWithoutQueueITToken, cookies);
+                customerIntegrationInfo, currentUrlWithoutQueueITToken, cookies, userAgent != null ? userAgent : "");
         if (matchedConfig == null) {
             return new RequestValidationResult(null, null, null);
         }

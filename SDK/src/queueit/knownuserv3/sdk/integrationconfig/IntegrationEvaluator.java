@@ -9,7 +9,8 @@ interface IIntegrationEvaluator {
     IntegrationConfigModel getMatchedIntegrationConfig(
             CustomerIntegration customerIntegration,
             String currentPageUrl,
-            Cookie[] cookies);
+            Cookie[] cookies,
+            String userAgent);
 }
 
 public class IntegrationEvaluator implements IIntegrationEvaluator {
@@ -18,10 +19,11 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     public IntegrationConfigModel getMatchedIntegrationConfig(
             CustomerIntegration customerIntegration,
             String currentPageUrl,
-            Cookie[] cookies) {
+            Cookie[] cookies,
+            String userAgent) {
         for (IntegrationConfigModel integration : customerIntegration.Integrations) {
             for (TriggerModel trigger : integration.Triggers) {
-                if (evaluateTrigger(trigger, currentPageUrl, cookies)) {
+                if (evaluateTrigger(trigger, currentPageUrl, cookies, userAgent)) {
                     return integration;
                 }
             }
@@ -32,17 +34,18 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     private boolean evaluateTrigger(
             TriggerModel trigger,
             String currentPageUrl,
-            Cookie[] cookies) {
+            Cookie[] cookies,
+            String userAgent) {
         if (trigger.LogicalOperator.equals(LogicalOperatorType.OR)) {
             for (TriggerPart part : trigger.TriggerParts) {
-                if (evaluateTriggerPart(part, currentPageUrl, cookies)) {
+                if (evaluateTriggerPart(part, currentPageUrl, cookies, userAgent)) {
                     return true;
                 }
             }
             return false;
         } else {
             for (TriggerPart part : trigger.TriggerParts) {
-                if (!evaluateTriggerPart(part, currentPageUrl, cookies)) {
+                if (!evaluateTriggerPart(part, currentPageUrl, cookies, userAgent)) {
                     return false;
                 }
             }
@@ -53,12 +56,15 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     private boolean evaluateTriggerPart(
             TriggerPart triggerPart,
             String currentPageUrl,
-            Cookie[] cookies) {
+            Cookie[] cookies,
+            String userAgent) {
         switch (triggerPart.ValidatorType) {
             case ValidatorType.URL_VALIDATOR:
                 return UrlValidatorHelper.evaluate(triggerPart, currentPageUrl);
             case ValidatorType.COOKIE_VALIDATOR:
                 return CookieValidatorHelper.evaluate(triggerPart, cookies);
+            case ValidatorType.USERAGENT_VALIDATOR:
+                return UserAgentValidatorHelper.evaluate(triggerPart, userAgent);
             default:
                 return false;
         }
@@ -135,6 +141,16 @@ final class CookieValidatorHelper {
     }
 }
 
+final class UserAgentValidatorHelper {
+
+    public static boolean evaluate(TriggerPart triggerPart, String userAgent) {
+        return ComparisonOperatorHelper.evaluate(triggerPart.Operator,
+                triggerPart.IsNegative,
+                triggerPart.IsIgnoreCase,
+                userAgent,
+                triggerPart.ValueToCompare);
+    }
+}
 final class ComparisonOperatorHelper {
 
     public static boolean evaluate(String opt, boolean isNegative, boolean isIgnoreCase, String left, String right) {

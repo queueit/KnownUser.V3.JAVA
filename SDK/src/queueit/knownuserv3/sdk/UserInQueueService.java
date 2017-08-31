@@ -6,15 +6,19 @@ import java.util.Objects;
 
 interface IUserInQueueService {
 
-    RequestValidationResult validateRequest(
+    RequestValidationResult validateQueueRequest(
             String targetUrl,
             String queueitToken,
-            EventConfig config,
+            QueueEventConfig config,
             String customerId,
             String secretKey) throws Exception;
 
-    void cancelQueueCookie(String eventId, String cookieDomain);
-
+    RequestValidationResult validateCancelRequest(
+            String targetUrl,
+            CancelEventConfig config,
+            String customerId,
+            String secretKey) throws Exception;
+    
     void extendQueueCookie(
             String eventId,
             int cookieValidityMinute,
@@ -25,7 +29,7 @@ interface IUserInQueueService {
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "1.0.0.0";
+    public static final String SDK_VERSION = "3.2.0";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(
@@ -34,10 +38,10 @@ class UserInQueueService implements IUserInQueueService {
     }
 
     @Override
-    public RequestValidationResult validateRequest(
+    public RequestValidationResult validateQueueRequest(
             String targetUrl,
             String queueitToken,
-            EventConfig config,
+            QueueEventConfig config,
             String customerId,
             String secretKey
     ) throws Exception {
@@ -51,7 +55,7 @@ class UserInQueueService implements IUserInQueueService {
                         config.getCookieValidityMinute(),
                         secretKey);
             }
-            return new RequestValidationResult(config.getEventId(), stateInfo.getQueueId(), null);
+            return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), stateInfo.getQueueId(), null);
         }
 
         QueueUrlParams queueParmas = QueueParameterHelper.extractQueueParams(queueitToken);
@@ -66,7 +70,7 @@ class UserInQueueService implements IUserInQueueService {
     private RequestValidationResult getQueueITTokenValidationResult(
             String targetUrl,
             String eventId,
-            EventConfig config,
+            QueueEventConfig config,
             QueueUrlParams queueParams,
             String customerId,
             String secretKey) throws Exception {
@@ -91,17 +95,17 @@ class UserInQueueService implements IUserInQueueService {
                 queueParams.getCookieValidityMinute() != null ? queueParams.getCookieValidityMinute() : config.getCookieValidityMinute(),
                 secretKey);
 
-        return new RequestValidationResult(config.getEventId(), queueParams.getQueueId(), null);
+        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), queueParams.getQueueId(), null);
     }
 
     private RequestValidationResult getVaidationErrorResult(
             String customerId,
             String targetUrl,
-            EventConfig config,
+            QueueEventConfig config,
             QueueUrlParams qParams,
             String errorCode) throws Exception {
 
-        String query = getQueryString(customerId, config)
+        String query = getQueryString(customerId, config.getEventId(), config.getVersion(), config.getCulture(), config.getLayoutName())
                 + "&queueittoken=" + qParams.getQueueITToken()
                 + "&ts=" + System.currentTimeMillis() / 1000L;
         if(!Utils.isNullOrWhiteSpace(targetUrl))
@@ -113,49 +117,46 @@ class UserInQueueService implements IUserInQueueService {
             domainAlias = domainAlias + "/";
         }
         String redirectUrl = "https://" + domainAlias + "error/" + errorCode + "?" + query;
-        return new RequestValidationResult(config.getEventId(), null, redirectUrl);
+        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl);
     }
 
     private RequestValidationResult getInQueueRedirectResult(
             String targetUrl,
-            EventConfig config,
+            QueueEventConfig config,
             String customerId) throws Exception {
 
         String redirectUrl = "https://" + config.getQueueDomain() + "?"
-                + getQueryString(customerId, config);
-        if(!Utils.isNullOrWhiteSpace(targetUrl))
-        {
+                + getQueryString(customerId, config.getEventId(), config.getVersion(), config.getCulture(), config.getLayoutName());
+        if(!Utils.isNullOrWhiteSpace(targetUrl)) {
             redirectUrl += "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
         }
                 
-        return new RequestValidationResult(config.getEventId(), null, redirectUrl);
+        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl);
     }
 
     private String getQueryString(
             String customerId,
-            EventConfig config) throws Exception {
+            String eventId,
+            int configVersion,
+            String culture,
+            String layoutName) throws Exception {
         ArrayList<String> queryStringList = new ArrayList<>();
         queryStringList.add("c=" + URLEncoder.encode(customerId, "UTF-8"));
-        queryStringList.add("e=" + URLEncoder.encode(config.getEventId(), "UTF-8"));
+        queryStringList.add("e=" + URLEncoder.encode(eventId, "UTF-8"));
         queryStringList.add("ver=v3-java-" + URLEncoder.encode(SDK_VERSION, "UTF-8"));
-        queryStringList.add("cver=" + URLEncoder.encode(String.valueOf(config.getVersion()), "UTF-8"));
+        queryStringList.add("cver=" + URLEncoder.encode(String.valueOf(configVersion), "UTF-8"));
 
-        if (!Utils.isNullOrWhiteSpace(config.getCulture())) {
-            queryStringList.add("cid=" + URLEncoder.encode(config.getCulture(), "UTF-8"));
+        if (!Utils.isNullOrWhiteSpace(culture)) {
+            queryStringList.add("cid=" + URLEncoder.encode(culture, "UTF-8"));
         }
 
-        if (!Utils.isNullOrWhiteSpace(config.getLayoutName())) {
-            queryStringList.add("l=" + URLEncoder.encode(config.getLayoutName(), "UTF-8"));
+        if (!Utils.isNullOrWhiteSpace(layoutName)) {
+            queryStringList.add("l=" + URLEncoder.encode(layoutName, "UTF-8"));
         }
 
         return String.join("&", queryStringList);
     }
-
-    @Override
-    public void cancelQueueCookie(String eventId, String cookieDomain) {
-        this._userInQueueStateRepository.cancelQueueCookie(eventId, cookieDomain);
-    }
-
+   
     @Override
     public void extendQueueCookie(
             String eventId,
@@ -163,5 +164,33 @@ class UserInQueueService implements IUserInQueueService {
             String cookieDomain,
             String secretKey) {
         this._userInQueueStateRepository.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
+    }
+    
+    @Override
+    public RequestValidationResult validateCancelRequest(
+            String targetUrl, CancelEventConfig config, String customerId, String secretKey) throws Exception {
+            
+        StateInfo state = _userInQueueStateRepository.getState(config.getEventId(), secretKey);
+
+        if (state.isValid()) {
+            this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain());
+
+            String query = getQueryString(customerId, config.getEventId(), config.getVersion(), null, null);
+            
+            if(targetUrl != null)
+                query += "&r=" + URLEncoder.encode(targetUrl, "UTF-8");
+
+            String domainAlias = config.getQueueDomain();
+            if (!domainAlias.endsWith("/"))
+                domainAlias = domainAlias + "/";
+
+            String redirectUrl = "https://" + domainAlias + "cancel/" + customerId + "/" + config.getEventId() + "/?" + query;
+
+            return new RequestValidationResult(ActionType.CANCEL_ACTION, config.getEventId(), state.getQueueId(), redirectUrl);
+        }
+        else
+        {
+            return new RequestValidationResult(ActionType.CANCEL_ACTION, config.getEventId(), null, null);
+        }
     }
 }

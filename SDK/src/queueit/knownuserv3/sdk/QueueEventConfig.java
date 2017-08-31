@@ -1,6 +1,6 @@
 package queueit.knownuserv3.sdk;
 
-public class EventConfig {
+public class QueueEventConfig {
 
     private String eventId;
     private String layoutName;
@@ -75,7 +75,19 @@ public class EventConfig {
         this.version = version;
     }
 
-    public EventConfig() {
+    public QueueEventConfig() {
         this.version = -1;
+    }
+    
+    @Override
+    public String toString() {
+       return "EventId:" + eventId + 
+              "&Version:" + version +
+              "&QueueDomain:" + queueDomain + 
+              "&CookieDomain:" + cookieDomain + 
+              "&ExtendCookieValidity:" + extendCookieValidity +
+              "&CookieValidityMinute:" + cookieValidityMinute + 
+              "&LayoutName:" + layoutName + 
+              "&Culture:" + culture;
     }
 }

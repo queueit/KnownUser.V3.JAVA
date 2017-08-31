@@ -8,16 +8,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class UserInQueueServiceTest {
 
     //ExtendableCookie Cookie
     @Test
-    public void validateRequest_ValidState_ExtendableCookie_NoCookieExtensionFromConfig_DoNotRedirectDoNotStoreCookieWithExtension()
+    public void validateQueueRequest_ValidState_ExtendableCookie_NoCookieExtensionFromConfig_DoNotRedirectDoNotStoreCookieWithExtension()
             throws Exception {
 
-        EventConfig config = new EventConfig();
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testdomain.com");
         config.setCookieValidityMinute(10);
@@ -50,7 +49,7 @@ public class UserInQueueServiceTest {
         };
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
 
-        RequestValidationResult result = testObject.validateRequest("url", "token", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateQueueRequest("url", "token", config, "testCustomer", "key");
         assertTrue(!result.doRedirect());
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(result.getEventId().equals("e1"));
@@ -58,9 +57,9 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void validateRequest_ValidState_ExtendableCookie_CookieExtensionFromConfig_DoNotRedirectDoStoreCookieWithExtension() throws Exception {
+    public void validateQueueRequest_ValidState_ExtendableCookie_CookieExtensionFromConfig_DoNotRedirectDoStoreCookieWithExtension() throws Exception {
 
-        EventConfig config = new EventConfig();
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testdomain.com");
         config.setCookieValidityMinute(10);
@@ -100,7 +99,7 @@ public class UserInQueueServiceTest {
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
 
-        RequestValidationResult result = testObject.validateRequest("url", "token", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateQueueRequest("url", "token", config, "testCustomer", "key");
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("queueId").equals("queueId"));
         assertTrue(callInfo.get("firstCall").get("eventId").equals("e1"));
@@ -110,10 +109,10 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void validateRequest_ValidState_NoExtendableCookie_DoNotRedirectDoNotStoreCookieWithExtension()
+    public void validateQueueRequest_ValidState_NoExtendableCookie_DoNotRedirectDoNotStoreCookieWithExtension()
             throws Exception {
 
-        EventConfig config = new EventConfig();
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testdomain.com");
         config.setCookieValidityMinute(10);
@@ -146,7 +145,7 @@ public class UserInQueueServiceTest {
         };
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
 
-        RequestValidationResult result = testObject.validateRequest("url", "token", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateQueueRequest("url", "token", config, "testCustomer", "key");
         assertTrue(!result.doRedirect());
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(result.getEventId().equals("e1"));
@@ -154,8 +153,8 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void ValidateRequest_NoCookie_TampredToken_RedirectToErrorPageWithHashError_DoNotStoreCookie() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_TampredToken_RedirectToErrorPageWithHashError_DoNotStoreCookie() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testDomain.com");
         config.setCookieValidityMinute(10);
@@ -201,7 +200,7 @@ public class UserInQueueServiceTest {
                 + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(result.doRedirect());
 
         Pattern pattern = Pattern.compile("&ts=[^&]*");
@@ -218,8 +217,8 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void ValidateRequest_NoCookie_ExpiredTimeStampInToken_RedirectToErrorPageWithTimeStampError_DoNotStoreCookie() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_ExpiredTimeStampInToken_RedirectToErrorPageWithTimeStampError_DoNotStoreCookie() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testDomain.com");
         config.setCookieValidityMinute(10);
@@ -266,7 +265,7 @@ public class UserInQueueServiceTest {
                 + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(result.doRedirect());
 
         Pattern pattern = Pattern.compile("&ts=[^&]*");
@@ -283,8 +282,8 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void ValidateRequest_NoCookie_EventIdMismatch_RedirectToErrorPageWithEventIdMissMatchError_DoNotStoreCookie() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_EventIdMismatch_RedirectToErrorPageWithEventIdMissMatchError_DoNotStoreCookie() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e2");
         config.setQueueDomain("testDomain.com");
         config.setCookieValidityMinute(10);
@@ -331,7 +330,7 @@ public class UserInQueueServiceTest {
                 + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(result.doRedirect());
 
         Pattern pattern = Pattern.compile("&ts=[^&]*");
@@ -348,8 +347,8 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void ValidateRequest_NoCookie_ValidToken_ExtendableCookie_DoNotRedirect_StoreExtendableCookie() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_ValidToken_ExtendableCookie_DoNotRedirect_StoreExtendableCookie() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setCookieDomain(".testdomain.com");
         config.setCookieValidityMinute(10);
@@ -394,7 +393,7 @@ public class UserInQueueServiceTest {
         String targetUrl = "http://test.test.com?b=h";
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("eventId").equals(config.getEventId()));
         assertTrue(callInfo.get("firstCall").get("isStateExtendable").equals(true));
@@ -404,8 +403,8 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void ValidateRequest_NoCookie_ValidToken_CookieValidityMinuteFromToken_DoNotRedirect_StoreNonExtendableCookie() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_ValidToken_CookieValidityMinuteFromToken_DoNotRedirect_StoreNonExtendableCookie() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("eventid");
         config.setCookieDomain(".testdomain.com");
         config.setCookieValidityMinute(10);
@@ -447,7 +446,7 @@ public class UserInQueueServiceTest {
         String targetUrl = "http://test.test.com?b=h";
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("eventId").equals(config.getEventId()));
         assertTrue(callInfo.get("firstCall").get("isStateExtendable").equals(false));
@@ -458,8 +457,8 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void ValidateRequest_NoCookie_WithoutToken_RedirectToQueue() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_WithoutToken_RedirectToQueue() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testDomain.com");
         config.setCookieValidityMinute(10);
@@ -502,7 +501,7 @@ public class UserInQueueServiceTest {
                 + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(targetUrl, "", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl, "", config, "testCustomer", "key");
         assertTrue(result.doRedirect());
         assertTrue(result.getRedirectUrl().toUpperCase().equals(expectedErrorUrl.toUpperCase()));
         assertTrue(!conditions.get("isStoreWasCalled"));
@@ -510,8 +509,8 @@ public class UserInQueueServiceTest {
     }
     
     @Test
-    public void ValidateRequest_NoCookie_WithoutToken_RedirectToQueue_NoTargetUrl() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_WithoutToken_RedirectToQueue_NoTargetUrl() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testDomain.com");
         config.setCookieValidityMinute(10);
@@ -553,7 +552,7 @@ public class UserInQueueServiceTest {
                 + "&l=" + config.getLayoutName();
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(null, "", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateQueueRequest(null, "", config, "testCustomer", "key");
         assertTrue(result.doRedirect());
         assertTrue(result.getRedirectUrl().toUpperCase().equals(expectedErrorUrl.toUpperCase()));
         assertTrue(!conditions.get("isStoreWasCalled"));
@@ -561,8 +560,8 @@ public class UserInQueueServiceTest {
     }
 
     @Test
-    public void ValidateRequest_NoCookie_InValidToken() throws Exception {
-        EventConfig config = new EventConfig();
+    public void ValidateQueueRequest_NoCookie_InValidToken() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testDomain.com");
         config.setCookieValidityMinute(10);
@@ -605,10 +604,58 @@ public class UserInQueueServiceTest {
                 + "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
-        RequestValidationResult result = testObject.validateRequest(targetUrl, "ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895", config, "testCustomer", "key");
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl, "ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895", config, "testCustomer", "key");
         assertTrue(result.doRedirect());
         assertTrue(result.getRedirectUrl().startsWith("https://testDomain.com/error/hash?c=testCustomer&e=e1&ver=v3-java-" + knownUserVersion + "&cver=10&l=testlayout&queueittoken=ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895&"));
         assertTrue(!conditions.get("isStoreWasCalled"));
+        assertTrue(config.getEventId().equals(result.getEventId()));
+    }
+    
+    @Test
+    public void validateCancelRequest() throws Exception {
+        CancelEventConfig config = new CancelEventConfig();
+        config.setEventId("e1");
+        config.setQueueDomain("testDomain.com");
+        config.setCookieDomain("testdomain");
+        config.setVersion(10);
+
+        HashMap<String, String> conditions = new HashMap<>();
+        
+        IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
+            @Override
+            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public StateInfo getState(String eventId, String customerSecretKey) {
+                return new StateInfo(true, "queueId", true, System.currentTimeMillis() / 1000L + 10 * 60);
+            }
+
+            @Override
+            public void cancelQueueCookie(String eventId, String cookieDomain) {
+                conditions.put("cancelQueueCookieWasCalled", "eventId:" + eventId + ",cookieDomain:" + cookieDomain);
+            }
+
+            @Override
+            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+        };
+
+        String knownUserVersion = UserInQueueService.SDK_VERSION;
+        String expectedUrl = "https://testDomain.com/cancel/testCustomer/e1/?c=testCustomer&e=e1"
+                + "&ver=v3-java-" + knownUserVersion
+                + "&cver=10"
+                + "&r=url";
+
+        UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
+        RequestValidationResult result = testObject.validateCancelRequest("url", config, "testCustomer", "key");
+
+        assertTrue("eventId:e1,cookieDomain:testdomain".equals(conditions.get("cancelQueueCookieWasCalled")));
+        assertTrue(result.doRedirect());
+        assertTrue("queueId".equals(result.getQueueId()));
+        assertTrue(expectedUrl.equals(result.getRedirectUrl()));
         assertTrue(config.getEventId().equals(result.getEventId()));
     }
 

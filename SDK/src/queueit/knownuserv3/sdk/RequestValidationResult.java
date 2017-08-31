@@ -2,16 +2,22 @@ package queueit.knownuserv3.sdk;
 
 public class RequestValidationResult {
 
+    private String actionType;
     private String eventId;
     private String redirectUrl;
     private String queueId;
 
-    public RequestValidationResult(String eventId, String queueId, String redirectUrl) {
+    public RequestValidationResult(String actionType, String eventId, String queueId, String redirectUrl) {
+        this.actionType = actionType;
         this.eventId = eventId;
         this.queueId = queueId;
         this.redirectUrl = redirectUrl;
     }
 
+    public String getActionType() {
+        return actionType;
+    }
+    
     public String getEventId() {
         return eventId;
     }

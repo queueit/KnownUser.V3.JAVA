@@ -155,9 +155,7 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
             String eventId,
             String cookieDomain) {
         String cookieKey = getCookieKey(eventId);
-        if (cookieManager.getCookie(cookieKey) != null) {
-            cookieManager.setCookie(cookieKey, null, 0, cookieDomain);
-        }
+        cookieManager.setCookie(cookieKey, null, 0, cookieDomain);        
     }
 
     @Override
@@ -187,8 +185,7 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
 
 interface ICookieManager {
 
-    void setCookie(String cookieName, String cookieValue, int maxAg, String cookieDomain);
-
+    void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain);
     String getCookie(String cookieName);
 }
 

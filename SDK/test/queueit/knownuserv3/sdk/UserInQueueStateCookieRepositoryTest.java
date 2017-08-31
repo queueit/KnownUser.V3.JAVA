@@ -20,7 +20,7 @@ public class UserInQueueStateCookieRepositoryTest {
 
         ICookieManager cookieManager = new ICookieManager() {
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
                 HashMap<String, Object> cookie = cookies.get(cookieName);
                 cookie.put("cookieValue", cookieValue);
                 cookie.put("cookieValue", cookieValue);
@@ -58,7 +58,7 @@ public class UserInQueueStateCookieRepositoryTest {
 
         ICookieManager cookieManager = new ICookieManager() {
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
                 cookies.put(cookieName, cookieValue);
             }
 
@@ -91,7 +91,7 @@ public class UserInQueueStateCookieRepositoryTest {
 
         ICookieManager cookieManager = new ICookieManager() {
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
                 cookies.put(cookieName, cookieValue);
             }
 
@@ -119,7 +119,7 @@ public class UserInQueueStateCookieRepositoryTest {
 
         ICookieManager cookieManager = new ICookieManager() {
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
                 cookies.put(cookieName, cookieValue);
             }
 
@@ -146,7 +146,7 @@ public class UserInQueueStateCookieRepositoryTest {
 
         ICookieManager cookieManager = new ICookieManager() {
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
 
             }
 
@@ -167,7 +167,8 @@ public class UserInQueueStateCookieRepositoryTest {
         String eventId = "event1";
         String secretKey = "secretKey";
         String queueId = "528f01d4-30f9-4753-95b3-2c8c33966abc";
-
+        String cookieDomain = "testDomain";
+        
         String cookieKey = UserInQueueStateCookieRepository.getCookieKey(eventId);
         HashMap<String, HashMap<String, Object>> cookies = new HashMap<>();
         cookies.put(cookieKey + "1", new HashMap<>());
@@ -177,7 +178,7 @@ public class UserInQueueStateCookieRepositoryTest {
             public int setCookieCallNumber = 0;
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
                 setCookieCallNumber++;
                 HashMap<String, Object> cookie = cookies.get(cookieName + String.valueOf(setCookieCallNumber));
                 cookie.put("cookieValue", cookieValue);
@@ -197,35 +198,12 @@ public class UserInQueueStateCookieRepositoryTest {
         testObject.store(eventId, queueId, true, "cookieDomain", 10, secretKey);
         assertTrue(testObject.getState(eventId, secretKey).isValid());
 
-        testObject.cancelQueueCookie(eventId, "cookieDomain");
+        testObject.cancelQueueCookie(eventId, cookieDomain);
 
         assertTrue((int) cookies.get(cookieKey + "2").get("expiration") == 0);
         assertTrue(cookies.get(cookieKey + "2").get("cookieValue") == null);
-        assertTrue(cookies.get(cookieKey + "2").get("cookieDomain").equals("cookieDomain"));
+        assertTrue(cookies.get(cookieKey + "2").get("cookieDomain").equals(cookieDomain));
         assertFalse(testObject.getState(eventId, secretKey).isValid());
-    }
-
-    @Test
-    public void cancelQueueCookie_CookieDoesNotExist_Test() {
-        String eventId = "event1";
-        HashMap<String, Object> conditions = new HashMap<>();
-        conditions.put("isSetCookieCalled", false);
-        ICookieManager cookieManager = new ICookieManager() {
-            @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
-                conditions.replace("isSetCookieCalled", true);
-            }
-
-            @Override
-            public String getCookie(String cookieName) {
-                return null;
-            }
-        };
-
-        UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.cancelQueueCookie(eventId, "cookieDomain");
-
-        assertFalse(Boolean.valueOf(String.valueOf(conditions.get("isSetCookieCalled"))));
     }
 
     @Test
@@ -243,7 +221,7 @@ public class UserInQueueStateCookieRepositoryTest {
             public int setCookieCallNumber = 0;
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
                 setCookieCallNumber++;
                 HashMap<String, Object> cookie = cookies.get(cookieName + String.valueOf(setCookieCallNumber));
                 cookie.put("cookieValue", cookieValue);
@@ -285,7 +263,7 @@ public class UserInQueueStateCookieRepositoryTest {
 
         ICookieManager cookieManager = new ICookieManager() {
             @Override
-            public void setCookie(String cookieName, String cookieValue, int expiration, String cookieDomain) {
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
                 conditions.replace("isSetCookieCalled", true);
             }
 

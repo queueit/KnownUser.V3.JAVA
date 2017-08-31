@@ -35,8 +35,8 @@ class QueueParameterHelper {
     public static final String CookieValidityMinuteKey = "cv";
     public static final String HashKey = "h";
     public static final String QueueIdKey = "q";
-
-    public static final String EventIdKey = "e";
+    public static final String RedirectTypeKey = "rt";
+    public static final String EventIdKey = "e";    
     public static final String KeyValueSeparatorChar = "_";
     public static final String KeyValueSeparatorGroupChar = "~";
 
@@ -76,15 +76,15 @@ class QueueParameterHelper {
                     case QueueIdKey:
                         result.setQueueId(keyValueArr[1]);
                         break;
-                    case ExtendableCookieKey: {
-
+                    case ExtendableCookieKey:
                         result.setExtendableCookie(Boolean.parseBoolean(keyValueArr[1]));
-                        break;
-                    }
+                        break;                    
                     case HashKey:
                         result.setHashCode(keyValueArr[1]);
                         break;
-
+                    case RedirectTypeKey:
+                        result.setRedirectType(keyValueArr[1]);
+                        break;
                 }
             }
             String queueITTokenWithoutHash = result.getQueueITToken().replace(KeyValueSeparatorGroupChar + HashKey + KeyValueSeparatorChar + result.getHashCode(), "");
@@ -124,6 +124,7 @@ class QueueUrlParams {
     private Integer cookieValidityMinute;
     private long timeStamp;
     private String queueId;
+    private String redirectType;
 
     public QueueUrlParams(){
         this.eventId = "";
@@ -198,5 +199,13 @@ class QueueUrlParams {
 
     public String getQueueId() {
         return this.queueId;
+    }
+    
+    public void setRedirectType(String redirectType) { 
+        this.redirectType = redirectType;
+    }
+    
+    public String getRedirectType() {
+        return this.redirectType;
     }
 }

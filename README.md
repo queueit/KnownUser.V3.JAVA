@@ -57,7 +57,7 @@ The following method is all that is needed to validate that a user has been thro
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
-            String queueitToken = request.getParameter(KnownUser.QUEUEIT_TOKEN_KEY);
+            String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
             // The pureUrl is used to match Triggers and as the Target url (where to return the users to)
             // It is therefor important that the pureUrl is exactly the url of the users browsers. So if your webserver is 
@@ -74,7 +74,7 @@ The following method is all that is needed to validate that a user has been thro
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-                if (queryString != null && queryString.contains(KnownUser.QUEUEIT_TOKEN_KEY)) {
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey)) {
                     response.sendRedirect(pureUrl);
                 }
             }
@@ -83,6 +83,16 @@ The following method is all that is needed to validate that a user has been thro
             //Use your own logging framework to log the Exception
             //This was a configuration exception, so we let the user continue            
         }
+    }
+    
+    // Helper method
+    private String getPureUrl(HttpServletRequest request){
+        Pattern pattern = Pattern.compile("([\\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", Pattern.CASE_INSENSITIVE);
+        String queryString = request.getQueryString();
+        String url = request.getRequestURL().toString() + (queryString != null ? ("?" + queryString) : "");
+
+        String pureUrl = pattern.matcher(url).replaceAll("");
+        return pureUrl;
     }
 ```
 
@@ -104,7 +114,7 @@ The following is an example of how to specify the configuration in code:
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
-            String queueitToken = request.getParameter(KnownUser.QUEUEIT_TOKEN_KEY);
+            String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
             
             EventConfig eventConfig = new EventConfig();
@@ -125,7 +135,7 @@ The following is an example of how to specify the configuration in code:
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-                if (queryString != null && queryString.contains(KnownUser.QUEUEIT_TOKEN_KEY)) {
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey)) {
                     response.sendRedirect(pureUrl);
                 }
             }

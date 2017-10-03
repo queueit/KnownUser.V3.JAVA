@@ -131,7 +131,7 @@ The following is an example of how to specify the configuration in code:
             String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
             
-            EventConfig eventConfig = new EventConfig();
+            QueueEventConfig eventConfig = new QueueEventConfig();
             eventConfig.setEventId("event1"); //ID of the queue to use           
             eventConfig.setCookieDomain(".mydomain.com"); //Optional - Domain name where the Queue-it session cookie should be saved. Default is to save on the domain of the request
             eventConfig.setQueueDomain("queue.mydomain.com"); //Optional - Domian name of the queue. Default is [CustomerId].queue-it.net
@@ -141,7 +141,7 @@ The following is an example of how to specify the configuration in code:
             eventConfig.setLayoutName("MyCustomLayoutName"); //Optional - Name of the queue ticket layout - e.g. "Default layout by Queue-it". Default is to use what is specified on the Event
             
             //Verify if the user has been through the queue
-            RequestValidationResult validationResult = KnownUser.validateRequestByLocalEventConfig(pureUrl, queueitToken, eventConfig, customerId, request, response, secretKey);
+            RequestValidationResult validationResult = KnownUser.resolveQueueRequestByLocalConfig(pureUrl, queueitToken, eventConfig, customerId, request, response, secretKey);
 
             if (validationResult.doRedirect()) {
                 //Send the user to the queue - either becuase hash was missing or becuase is was invalid

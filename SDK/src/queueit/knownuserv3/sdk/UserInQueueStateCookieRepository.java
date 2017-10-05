@@ -183,12 +183,6 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
     }
 }
 
-interface ICookieManager {
-
-    void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain);
-    String getCookie(String cookieName);
-}
-
 class StateInfo {
 
     private final boolean isValid;

@@ -1,4 +1,7 @@
 package queueit.knownuserv3.sdk;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.Cookie;
@@ -37,10 +40,10 @@ public class KnownUser {
         try {
             boolean isDebug = getIsDebug(queueitToken, secretKey);
             if (isDebug) {
-                debugEntries.put("configVersion", Integer.toString(customerIntegrationInfo.Version));
-                debugEntries.put("pureUrl", currentUrlWithoutQueueITToken);
-                debugEntries.put("queueitToken", queueitToken);
-                debugEntries.put("OriginalURL", request.getRequestURL().toString());                
+                debugEntries.put("ConfigVersion", Integer.toString(customerIntegrationInfo.Version));
+                debugEntries.put("PureUrl", currentUrlWithoutQueueITToken);
+                debugEntries.put("QueueitToken", queueitToken);
+                debugEntries.put("OriginalUrl", getOriginalUrl(request));
             }
 
             if (Utils.isNullOrWhiteSpace(currentUrlWithoutQueueITToken)) {
@@ -53,14 +56,13 @@ public class KnownUser {
             Cookie[] cookies = request != null ? request.getCookies() : new Cookie[0];        
 
             IntegrationEvaluator configEvaluater = new IntegrationEvaluator();
-            String userAgent = request.getHeader("User-Agent");
 
             IntegrationConfigModel matchedConfig = configEvaluater.getMatchedIntegrationConfig(
-                    customerIntegrationInfo, currentUrlWithoutQueueITToken, cookies, userAgent != null ? userAgent : "");
+                    customerIntegrationInfo, currentUrlWithoutQueueITToken, request);
 
             if (isDebug) {
                 String matchedConfigName = (matchedConfig != null) ? matchedConfig.Name : "NULL";
-                debugEntries.put("matchedConfig", matchedConfigName);                
+                debugEntries.put("MatchedConfig", matchedConfigName);                
             }
 
             if (matchedConfig == null) {
@@ -136,10 +138,10 @@ public class KnownUser {
         
         boolean isDebug = getIsDebug(queueitToken, secretKey);
         if (isDebug) {
-            debugEntries.put("targetUrl", targetUrl);
-            debugEntries.put("queueitToken", queueitToken);
-            debugEntries.put("cancelConfig", cancelConfig != null ? cancelConfig.toString() : "NULL");
-            debugEntries.put("OriginalURL", request.getRequestURL().toString());
+            debugEntries.put("TargetUrl", targetUrl);
+            debugEntries.put("QueueitToken", queueitToken);
+            debugEntries.put("CancelConfig", cancelConfig != null ? cancelConfig.toString() : "NULL");
+            debugEntries.put("OriginalUrl", getOriginalUrl(request));
         }
         
         if (Utils.isNullOrWhiteSpace(targetUrl)) {
@@ -189,10 +191,10 @@ public class KnownUser {
         
         boolean isDebug = getIsDebug(queueitToken, secretKey);
         if (isDebug) {
-            debugEntries.put("targetUrl", targetUrl);
-            debugEntries.put("queueitToken", queueitToken);
-            debugEntries.put("queueConfig", queueConfig != null ? queueConfig.toString() : "NULL");
-            debugEntries.put("OriginalURL", request.getRequestURL().toString());            
+            debugEntries.put("TargetUrl", targetUrl);
+            debugEntries.put("QueueitToken", queueitToken);
+            debugEntries.put("QueueConfig", queueConfig != null ? queueConfig.toString() : "NULL");
+            debugEntries.put("OriginalUrl", getOriginalUrl(request));
         }
         
         if (Utils.isNullOrWhiteSpace(customerId)) {
@@ -242,17 +244,18 @@ public class KnownUser {
         userInQueueService.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
     }
     
-    private static void setDebugCookie(Map<String, String> debugEntries, HttpServletRequest request, HttpServletResponse response) {
+    private static void setDebugCookie(Map<String, String> debugEntries, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
         if(debugEntries.isEmpty())
             return;
         
         ICookieManager cookieManager = new CookieManager(request, response);
-        String cookieValue = "";        
+        String cookieValue = "";
         for (Map.Entry<String, String> entry : debugEntries.entrySet()) {
-            cookieValue += (entry.getKey() + "=" + entry.getValue() + "&");            
+            cookieValue += (entry.getKey() + "=" + entry.getValue() + "|");            
         }
         if(!"".equals(cookieValue))
-            cookieValue = cookieValue.substring(0, cookieValue.length() - 1); // remove trailing &
+            cookieValue = cookieValue.substring(0, cookieValue.length() - 1); // remove trailing char
+        
         cookieManager.setCookie(QueueITDebugKey, cookieValue, null, null);
     }
     
@@ -265,6 +268,18 @@ public class KnownUser {
         }
         return false;
     }
+    
+    private static String getOriginalUrl(HttpServletRequest request){
+        return (request.getQueryString() != null) 
+                ? String.join("", request.getRequestURL(), "?",request.getQueryString()) 
+                : request.getRequestURL().toString();        
+    }
+}
+
+interface ICookieManager {
+
+    void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain);
+    String getCookie(String cookieName);
 }
 
 class CookieManager implements ICookieManager {
@@ -287,7 +302,9 @@ class CookieManager implements ICookieManager {
         if (cookieValue == null) {
             cookieValue = "";
         }
-        cookie.setValue(cookieValue);
+        try {
+            cookie.setValue(URLEncoder.encode(cookieValue, "UTF-8"));
+        } catch (UnsupportedEncodingException ex) {}
         if(expiration != null)
             cookie.setMaxAge(expiration);
         cookie.setPath("/");
@@ -311,7 +328,9 @@ class CookieManager implements ICookieManager {
 
         for (Cookie cookie : cookies) {
             if (cookie.getName().equals(cookieName)) {
-                return cookie.getValue();
+                try {
+                    return URLDecoder.decode(cookie.getValue(), "UTF-8");
+                } catch (UnsupportedEncodingException ex) { }
             }
         }
         return null;

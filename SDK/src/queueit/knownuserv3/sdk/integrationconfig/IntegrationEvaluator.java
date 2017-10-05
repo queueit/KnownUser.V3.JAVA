@@ -3,14 +3,16 @@ package queueit.knownuserv3.sdk.integrationconfig;
 import javax.servlet.http.Cookie;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Map;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
 
 interface IIntegrationEvaluator {
 
     IntegrationConfigModel getMatchedIntegrationConfig(
             CustomerIntegration customerIntegration,
             String currentPageUrl,
-            Cookie[] cookies,
-            String userAgent);
+            HttpServletRequest request) throws Exception;
 }
 
 public class IntegrationEvaluator implements IIntegrationEvaluator {
@@ -19,11 +21,14 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     public IntegrationConfigModel getMatchedIntegrationConfig(
             CustomerIntegration customerIntegration,
             String currentPageUrl,
-            Cookie[] cookies,
-            String userAgent) {
+            HttpServletRequest request) throws Exception {
+        
+        if(request == null)
+           throw new Exception("request is null");
+        
         for (IntegrationConfigModel integration : customerIntegration.Integrations) {
             for (TriggerModel trigger : integration.Triggers) {
-                if (evaluateTrigger(trigger, currentPageUrl, cookies, userAgent)) {
+                if (evaluateTrigger(trigger, currentPageUrl, request)) {
                     return integration;
                 }
             }
@@ -34,18 +39,17 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     private boolean evaluateTrigger(
             TriggerModel trigger,
             String currentPageUrl,
-            Cookie[] cookies,
-            String userAgent) {
+            HttpServletRequest request) {
         if (trigger.LogicalOperator.equals(LogicalOperatorType.OR)) {
             for (TriggerPart part : trigger.TriggerParts) {
-                if (evaluateTriggerPart(part, currentPageUrl, cookies, userAgent)) {
+                if (evaluateTriggerPart(part, currentPageUrl, request)) {
                     return true;
                 }
             }
             return false;
         } else {
             for (TriggerPart part : trigger.TriggerParts) {
-                if (!evaluateTriggerPart(part, currentPageUrl, cookies, userAgent)) {
+                if (!evaluateTriggerPart(part, currentPageUrl, request)) {
                     return false;
                 }
             }
@@ -53,18 +57,16 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
         }
     }
 
-    private boolean evaluateTriggerPart(
-            TriggerPart triggerPart,
-            String currentPageUrl,
-            Cookie[] cookies,
-            String userAgent) {
+    private boolean evaluateTriggerPart(TriggerPart triggerPart, String currentPageUrl, HttpServletRequest request) {
         switch (triggerPart.ValidatorType) {
             case ValidatorType.URL_VALIDATOR:
                 return UrlValidatorHelper.evaluate(triggerPart, currentPageUrl);
             case ValidatorType.COOKIE_VALIDATOR:
-                return CookieValidatorHelper.evaluate(triggerPart, cookies);
+                return CookieValidatorHelper.evaluate(triggerPart, request.getCookies());
             case ValidatorType.USERAGENT_VALIDATOR:
-                return UserAgentValidatorHelper.evaluate(triggerPart, userAgent);
+                return UserAgentValidatorHelper.evaluate(triggerPart, request.getHeader("User-Agent"));
+            case ValidatorType.HTTPHEADER_VALIDATOR:
+                return HttpHeaderValidatorHelper.evaluate(triggerPart, request);
             default:
                 return false;
         }
@@ -151,6 +153,18 @@ final class UserAgentValidatorHelper {
                 triggerPart.ValueToCompare);
     }
 }
+
+    final class HttpHeaderValidatorHelper {
+        public static boolean evaluate(TriggerPart triggerPart, HttpServletRequest request)
+        {
+            return ComparisonOperatorHelper.evaluate(triggerPart.Operator,
+                triggerPart.IsNegative,
+                triggerPart.IsIgnoreCase,
+                request.getHeader(triggerPart.HttpHeaderName),
+                triggerPart.ValueToCompare);
+        }
+    }
+
 final class ComparisonOperatorHelper {
 
     public static boolean evaluate(String opt, boolean isNegative, boolean isIgnoreCase, String left, String right) {

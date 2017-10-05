@@ -29,7 +29,7 @@ interface IUserInQueueService {
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "3.2.0";
+    public static final String SDK_VERSION = "3.3.0";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(
@@ -116,7 +116,7 @@ class UserInQueueService implements IUserInQueueService {
         if (!domainAlias.endsWith("/")) {
             domainAlias = domainAlias + "/";
         }
-        String redirectUrl = "https://" + domainAlias + "error/" + errorCode + "?" + query;
+        String redirectUrl = "https://" + domainAlias + "error/" + errorCode + "/?" + query;
         return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl);
     }
 

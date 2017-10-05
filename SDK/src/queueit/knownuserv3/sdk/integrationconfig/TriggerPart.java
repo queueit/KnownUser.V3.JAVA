@@ -11,4 +11,6 @@ public class TriggerPart {
     public String UrlPart;
     //CookieValidator
     public String CookieName;
+	//HttpHeaderValidator
+    public String HttpHeaderName;
 }

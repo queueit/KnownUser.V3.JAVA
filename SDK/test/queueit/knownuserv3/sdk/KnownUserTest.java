@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -134,12 +135,17 @@ public class KnownUserTest {
         
         KnownUser.cancelRequestByLocalConfig("url", queueittoken, cancelEventConfig, "customerId", requestMock, responseMock, secretKey);
 
-        // Assert
-        String expectedCookieValue = "cancelConfig=EventId:eventid&Version:1&QueueDomain:queuedomain&CookieDomain:cookiedomain&OriginalURL=requestUrl&queueitToken=" + queueittoken + "&targetUrl=url";        
-        
+        // Assert                
         assertTrue(responseMock.addedCookies.size() == 1);
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
-        assertTrue(responseMock.addedCookies.get(0).getValue().equals(expectedCookieValue));
+        String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
+        assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
+        assertTrue(decodedCookieValue.contains("|CancelConfig=EventId:eventid"));
+        assertTrue(decodedCookieValue.contains("&Version:1"));
+        assertTrue(decodedCookieValue.contains("&QueueDomain:queuedomain"));
+        assertTrue(decodedCookieValue.contains("&CookieDomain:cookiedomain"));        
+        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("|TargetUrl=url"));
     }
 
     @Test
@@ -535,11 +541,20 @@ public class KnownUserTest {
         KnownUser.resolveQueueRequestByLocalConfig("targetUrl", queueittoken, queueConfig, "customerId", requestMock, responseMock, secretKey);
 
         // Assert
-        String expectedCookieValue = "OriginalURL=requestUrl&queueConfig=EventId:eventId&Version:12&QueueDomain:queueDomain&CookieDomain:cookieDomain&ExtendCookieValidity:true&CookieValidityMinute:10&LayoutName:layoutName&Culture:culture&queueitToken=" +queueittoken + "&targetUrl=targetUrl";
-        
         assertTrue(responseMock.addedCookies.size() == 1);
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
-        assertTrue(responseMock.addedCookies.get(0).getValue().equals(expectedCookieValue));
+        String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
+        assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
+        assertTrue(decodedCookieValue.contains("|QueueConfig=EventId:eventId"));
+        assertTrue(decodedCookieValue.contains("&Version:12"));
+        assertTrue(decodedCookieValue.contains("&QueueDomain:queueDomain"));
+        assertTrue(decodedCookieValue.contains("&CookieDomain:cookieDomain"));
+        assertTrue(decodedCookieValue.contains("&ExtendCookieValidity:true"));
+        assertTrue(decodedCookieValue.contains("&CookieValidityMinute:10"));
+        assertTrue(decodedCookieValue.contains("&LayoutName:layoutName"));
+        assertTrue(decodedCookieValue.contains("&Culture:culture"));
+        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("|TargetUrl=targetUrl"));
     }
     
     @Test
@@ -692,11 +707,23 @@ public class KnownUserTest {
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
 
         // Assert
-        String expectedCookieValue = "OriginalURL=requestUrl&pureUrl=http://test.com?event1=true&configVersion=3&queueConfig=EventId:event1&Version:3&QueueDomain:knownusertest.queue-it.net&CookieDomain:.test.com&ExtendCookieValidity:true&CookieValidityMinute:20&LayoutName:Christmas Layout by Queue-it&Culture:da-DK&queueitToken=" + queueittoken + "&targetUrl=http://test.com?event1=true&matchedConfig=event1action";
-        
         assertTrue(responseMock.addedCookies.size() == 1);
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
-        assertTrue(responseMock.addedCookies.get(0).getValue().equals(expectedCookieValue));
+        String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
+        assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
+        assertTrue(decodedCookieValue.contains("|PureUrl=http://test.com?event1=true"));
+        assertTrue(decodedCookieValue.contains("|ConfigVersion=3"));
+        assertTrue(decodedCookieValue.contains("|QueueConfig=EventId:event1"));
+        assertTrue(decodedCookieValue.contains("&Version:3"));
+        assertTrue(decodedCookieValue.contains("&QueueDomain:knownusertest.queue-it.net"));
+        assertTrue(decodedCookieValue.contains("&CookieDomain:.test.com"));
+        assertTrue(decodedCookieValue.contains("&ExtendCookieValidity:true"));
+        assertTrue(decodedCookieValue.contains("&CookieValidityMinute:20"));
+        assertTrue(decodedCookieValue.contains("&LayoutName:Christmas Layout by Queue-it"));
+        assertTrue(decodedCookieValue.contains("&Culture:da-DK"));
+        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("|TargetUrl=http://test.com?event1=true"));
+        assertTrue(decodedCookieValue.contains("|MatchedConfig=event1action"));
     }
     
     @Test
@@ -739,11 +766,14 @@ public class KnownUserTest {
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
 
         // Assert
-        String expectedCookieValue = "OriginalURL=requestUrl&pureUrl=http://test.com?event1=true&configVersion=3&queueitToken=" + queueittoken + "&matchedConfig=NULL";
-        
         assertTrue(responseMock.addedCookies.size() == 1);
-        assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
-        assertTrue(responseMock.addedCookies.get(0).getValue().equals(expectedCookieValue));
+        assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));        
+        String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
+        assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
+        assertTrue(decodedCookieValue.contains("|PureUrl=http://test.com?event1=true"));
+        assertTrue(decodedCookieValue.contains("ConfigVersion=3"));
+        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("|MatchedConfig=NULL"));
     }
     
     @Test
@@ -921,6 +951,7 @@ public class KnownUserTest {
         public Cookie[] CookiesValue;
         public String UserAgent;
         public String RequestURL;
+        public String QueryString;
 
         @Override
         public String getAuthType() {
@@ -981,7 +1012,7 @@ public class KnownUserTest {
 
         @Override
         public String getQueryString() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            return this.QueryString;
         }
 
         @Override

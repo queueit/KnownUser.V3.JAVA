@@ -54,13 +54,6 @@ The following method is all that is needed to validate that a user has been thro
 ```
     private void doValidation(HttpServletRequest request, HttpServletResponse response) {
         try {
-        
-            //Adding no cache headers to prevent browsers to cache requests
-            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-            response.setHeader("Pragma", "no-cache"); // HTTP 1.0
-            response.setDateHeader("Expires", 0); // Proxies.
-            //end
-            
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
@@ -76,6 +69,11 @@ The following method is all that is needed to validate that a user has been thro
                     pureUrl, queueitToken, integrationConfig, customerId, request, response, secretKey);
 
             if (validationResult.doRedirect()) {
+                //Adding no cache headers to prevent browsers to cache requests
+                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+                response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+                response.setDateHeader("Expires", 0); // Proxies.
+                //end
                 //Send the user to the queue - either becuase hash was missing or becuase is was invalid
                 response.sendRedirect(validationResult.getRedirectUrl());
             } else {
@@ -117,13 +115,7 @@ The following is an example of how to specify the configuration in code:
 ```
     private void doValidationByLocalEventConfig(HttpServletRequest request, HttpServletResponse response) {
         try {
- 
-            //Adding no cache headers to prevent browsers to cache requests
-            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-            response.setHeader("Pragma", "no-cache"); // HTTP 1.0
-            response.setDateHeader("Expires", 0); // Proxies.
-            //end
-                         
+                       
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
@@ -143,6 +135,11 @@ The following is an example of how to specify the configuration in code:
             RequestValidationResult validationResult = KnownUser.resolveQueueRequestByLocalConfig(pureUrl, queueitToken, eventConfig, customerId, request, response, secretKey);
 
             if (validationResult.doRedirect()) {
+                //Adding no cache headers to prevent browsers to cache requests
+                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+                response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+                response.setDateHeader("Expires", 0); // Proxies.
+                //end
                 //Send the user to the queue - either becuase hash was missing or becuase is was invalid
                 response.sendRedirect(validationResult.getRedirectUrl());
             } else {

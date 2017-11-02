@@ -10,4 +10,4 @@ The [IntegrationConfigProvider.java](https://github.com/queueit/KnownUser.V3.JAV
 the download and caching of the configuration can be done. 
 *This is just an example*, but if you make your own downloader, please cache the result for 5 minutes to limit number of download requests.
 
-![Configuration Provider flow](https://github.com/queueit/KnownUser.V3.Java/blob/master/Documentation/ConfigurationProviderExample.PNG)
+![Configuration Provider flow](https://github.com/queueit/KnownUser.V3.Java/blob/master/Documentation/ConfigProviderExample.png)

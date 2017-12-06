@@ -6,9 +6,11 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.security.Principal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import javax.servlet.AsyncContext;
@@ -126,6 +128,12 @@ public class KnownUserTest {
         
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.RequestURL = "requestUrl";
+        requestMock.RemoteAddr = "80.35.35.34";
+        requestMock.Headers.put("via", "1.1 example.com");
+        requestMock.Headers.put("forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43");
+        requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
+        requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
+        requestMock.Headers.put("x-forwarded-proto", "https");
         
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
         
@@ -134,8 +142,8 @@ public class KnownUserTest {
         String queueittoken = QueueITTokenGenerator.generateToken("eventId", secretKey);
         
         KnownUser.cancelRequestByLocalConfig("url", queueittoken, cancelEventConfig, "customerId", requestMock, responseMock, secretKey);
-
-        // Assert                
+        
+        // Assert
         assertTrue(responseMock.addedCookies.size() == 1);
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
         String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
@@ -146,6 +154,12 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("&CookieDomain:cookiedomain"));        
         assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
         assertTrue(decodedCookieValue.contains("|TargetUrl=url"));
+        assertTrue(decodedCookieValue.contains("|RequestIP=80.35.35.34"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Via=1.1 example.com"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));
     }
 
     @Test
@@ -531,6 +545,12 @@ public class KnownUserTest {
         
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.RequestURL = "requestUrl";
+        requestMock.RemoteAddr = "80.35.35.34";
+        requestMock.Headers.put("via", "1.1 example.com");
+        requestMock.Headers.put("forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43");
+        requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
+        requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
+        requestMock.Headers.put("x-forwarded-proto", "https");
         
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
         
@@ -555,6 +575,12 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("&Culture:culture"));
         assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
         assertTrue(decodedCookieValue.contains("|TargetUrl=targetUrl"));
+        assertTrue(decodedCookieValue.contains("|RequestIP=80.35.35.34"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Via=1.1 example.com"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));
     }
     
     @Test
@@ -756,8 +782,14 @@ public class KnownUserTest {
 
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.RequestURL = "requestUrl";
+        requestMock.RemoteAddr = "80.35.35.34";
+        requestMock.Headers.put("via", "1.1 example.com");
+        requestMock.Headers.put("forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43");
+        requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
+        requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
+        requestMock.Headers.put("x-forwarded-proto", "https");
         
-		HttpServletResponseMock responseMock = new HttpServletResponseMock();
+        HttpServletResponseMock responseMock = new HttpServletResponseMock();
         
         // Act
         String secretKey = "secretkey";
@@ -773,7 +805,12 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("|PureUrl=http://test.com?event1=true"));
         assertTrue(decodedCookieValue.contains("ConfigVersion=3"));
         assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
-        assertTrue(decodedCookieValue.contains("|MatchedConfig=NULL"));
+        assertTrue(decodedCookieValue.contains("|RequestIP=80.35.35.34"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Via=1.1 example.com"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));        
     }
     
     @Test
@@ -952,7 +989,13 @@ public class KnownUserTest {
         public String UserAgent;
         public String RequestURL;
         public String QueryString;
-
+        public String RemoteAddr;
+        public HashMap Headers;
+        
+        public HttpServletRequestMock() {
+            this.Headers = new HashMap();
+        }
+        
         @Override
         public String getAuthType() {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -972,7 +1015,13 @@ public class KnownUserTest {
         public String getHeader(String key) {
             if("User-Agent".equals(key))
                 return this.UserAgent;
-            return "";
+            
+            String value = (String) this.Headers.get(key);
+            
+            if(value == null)
+                value = "";
+            
+            return value;
         }
 
         @Override
@@ -1202,7 +1251,7 @@ public class KnownUserTest {
 
         @Override
         public String getRemoteAddr() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            return RemoteAddr;
         }
 
         @Override

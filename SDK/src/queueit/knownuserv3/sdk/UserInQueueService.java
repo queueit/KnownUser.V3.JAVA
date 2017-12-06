@@ -29,7 +29,7 @@ interface IUserInQueueService {
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "3.3.0";
+    public static final String SDK_VERSION = "3.3.2";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(

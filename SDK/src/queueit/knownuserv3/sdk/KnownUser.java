@@ -2,6 +2,7 @@ package queueit.knownuserv3.sdk;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.Cookie;
@@ -44,6 +45,7 @@ public class KnownUser {
                 debugEntries.put("PureUrl", currentUrlWithoutQueueITToken);
                 debugEntries.put("QueueitToken", queueitToken);
                 debugEntries.put("OriginalUrl", getOriginalUrl(request));
+                logMoreRequestDetails(debugEntries, request);
             }
 
             if (Utils.isNullOrWhiteSpace(currentUrlWithoutQueueITToken)) {
@@ -142,6 +144,7 @@ public class KnownUser {
             debugEntries.put("QueueitToken", queueitToken);
             debugEntries.put("CancelConfig", cancelConfig != null ? cancelConfig.toString() : "NULL");
             debugEntries.put("OriginalUrl", getOriginalUrl(request));
+            logMoreRequestDetails(debugEntries, request);
         }
         
         if (Utils.isNullOrWhiteSpace(targetUrl)) {
@@ -195,6 +198,7 @@ public class KnownUser {
             debugEntries.put("QueueitToken", queueitToken);
             debugEntries.put("QueueConfig", queueConfig != null ? queueConfig.toString() : "NULL");
             debugEntries.put("OriginalUrl", getOriginalUrl(request));
+            logMoreRequestDetails(debugEntries, request);
         }
         
         if (Utils.isNullOrWhiteSpace(customerId)) {
@@ -257,6 +261,16 @@ public class KnownUser {
             cookieValue = cookieValue.substring(0, cookieValue.length() - 1); // remove trailing char
         
         cookieManager.setCookie(QueueITDebugKey, cookieValue, null, null);
+    }
+    
+    private static void logMoreRequestDetails(Map<String, String> debugEntries, HttpServletRequest request) {
+        debugEntries.put("ServerUtcTime", Instant.now().toString());
+        debugEntries.put("RequestIP", request.getRemoteAddr());
+        debugEntries.put("RequestHttpHeader_Via", request.getHeader("via") != null ? request.getHeader("via") : "");
+        debugEntries.put("RequestHttpHeader_Forwarded", request.getHeader("forwarded") != null ? request.getHeader("forwarded") : "");
+        debugEntries.put("RequestHttpHeader_XForwardedFor", request.getHeader("x-forwarded-for") != null ? request.getHeader("x-forwarded-for") : "");
+        debugEntries.put("RequestHttpHeader_XForwardedHost", request.getHeader("x-forwarded-host") != null ? request.getHeader("x-forwarded-host") : "");
+        debugEntries.put("RequestHttpHeader_XForwardedProto", request.getHeader("x-forwarded-proto") != null ? request.getHeader("x-forwarded-proto") : "");        
     }
     
     private static boolean getIsDebug(String queueitToken, String secretKey) throws Exception

@@ -6,6 +6,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
@@ -657,6 +659,17 @@ public class UserInQueueServiceTest {
         assertTrue("queueId".equals(result.getQueueId()));
         assertTrue(expectedUrl.equals(result.getRedirectUrl()));
         assertTrue(config.getEventId().equals(result.getEventId()));
+    }
+    
+    @Test
+    public void getIgnoreRequest() throws Exception {
+        UserInQueueService testObject = new UserInQueueService(null);
+        RequestValidationResult result = testObject.getIgnoreActionResult();
+        assertTrue(ActionType.IGNORE_ACTION.equals(result.getActionType()));
+        assertFalse(result.doRedirect());
+        assertNull(result.getEventId());
+        assertNull(result.getQueueId());
+        assertNull(result.getRedirectUrl());
     }
 
     public static class QueueITTokenGenerator {

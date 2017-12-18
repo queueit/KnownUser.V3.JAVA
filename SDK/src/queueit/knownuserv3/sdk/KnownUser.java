@@ -16,7 +16,7 @@ public class KnownUser {
     public static final String QueueITDebugKey = "queueitdebug";
     private static IUserInQueueService _userInQueueService;
 
-    private static IUserInQueueService createUserInQueueService(HttpServletRequest request, HttpServletResponse response) {
+    private static IUserInQueueService getUserInQueueService(HttpServletRequest request, HttpServletResponse response) {
         if (_userInQueueService == null) {
             return new UserInQueueService(new UserInQueueStateCookieRepository(new CookieManager(request, response)));
         }
@@ -71,44 +71,16 @@ public class KnownUser {
                 return new RequestValidationResult(null, null, null, null);
             }
 
+            // unspecified or 'Queue' specified
             if(Utils.isNullOrWhiteSpace(matchedConfig.ActionType) || ActionType.QUEUE_ACTION.equals(matchedConfig.ActionType)) {
-                String targetUrl;
-                switch (matchedConfig.RedirectLogic) {
-                    case "ForecedTargetUrl": // suuport for typo (fall through)
-                    case "ForcedTargetUrl":
-                        targetUrl = matchedConfig.ForcedTargetUrl;
-                        break;
-                    case "EventTargetUrl":
-                        targetUrl = "";
-                        break;
-                    default:
-                        targetUrl = currentUrlWithoutQueueITToken;
-                        break;
-                }
-
-                QueueEventConfig queueConfig = new QueueEventConfig();
-                queueConfig.setQueueDomain(matchedConfig.QueueDomain);
-                queueConfig.setCulture(matchedConfig.Culture);
-                queueConfig.setEventId(matchedConfig.EventId);
-                queueConfig.setExtendCookieValidity(matchedConfig.ExtendCookieValidity);
-                queueConfig.setLayoutName(matchedConfig.LayoutName);
-                queueConfig.setCookieValidityMinute(matchedConfig.CookieValidityMinute);
-                queueConfig.setCookieDomain(matchedConfig.CookieDomain);
-                queueConfig.setVersion(customerIntegrationInfo.Version);
-
-                return resolveQueueRequestByLocalConfig(
-                        targetUrl, queueitToken, queueConfig, customerId, request, response, secretKey, debugEntries);
+                return handleQueueAction(matchedConfig, currentUrlWithoutQueueITToken, customerIntegrationInfo, queueitToken, customerId, request, response, secretKey, debugEntries);
             }
-            // CancelQueueAction
+            else if (ActionType.CANCEL_ACTION.equals(matchedConfig.ActionType)){
+                return handleCancelAction(matchedConfig, customerIntegrationInfo, currentUrlWithoutQueueITToken, queueitToken, customerId, request, response, secretKey, debugEntries);
+            }            
+            // for all unknown types default to 'Ignore'
             else {
-                CancelEventConfig cancelConfig = new CancelEventConfig();
-                cancelConfig.setQueueDomain(matchedConfig.QueueDomain);
-                cancelConfig.setEventId(matchedConfig.EventId);
-                cancelConfig.setCookieDomain(matchedConfig.CookieDomain);
-                cancelConfig.setVersion(customerIntegrationInfo.Version);
-
-                return cancelRequestByLocalConfig(
-                        currentUrlWithoutQueueITToken, queueitToken, cancelConfig, customerId, request, response, secretKey, debugEntries);
+                return handleIgnoreAction(request, response);
             }
         }
         finally {
@@ -166,7 +138,7 @@ public class KnownUser {
             throw new Exception("QueueDomain from cancelConfig can not be null or empty.");
         }
         
-        IUserInQueueService userInQueueService = createUserInQueueService(request, response);
+        IUserInQueueService userInQueueService = getUserInQueueService(request, response);
         return userInQueueService.validateCancelRequest(targetUrl, cancelConfig, customerId, secretKey);
     }
     
@@ -223,7 +195,7 @@ public class KnownUser {
             queueitToken = "";
         }
 
-        IUserInQueueService userInQueueService = createUserInQueueService(request, response);
+        IUserInQueueService userInQueueService = getUserInQueueService(request, response);
         return userInQueueService.validateQueueRequest(targetUrl, queueitToken, queueConfig, customerId, secretKey);
     }
 
@@ -244,7 +216,7 @@ public class KnownUser {
             throw new Exception("secretKey can not be null or empty.");
         }
         
-        IUserInQueueService userInQueueService = createUserInQueueService(request, response);
+        IUserInQueueService userInQueueService = getUserInQueueService(request, response);
         userInQueueService.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
     }
     
@@ -287,6 +259,51 @@ public class KnownUser {
         return (request.getQueryString() != null) 
                 ? String.join("", request.getRequestURL(), "?",request.getQueryString()) 
                 : request.getRequestURL().toString();        
+    }
+    
+    private static RequestValidationResult handleQueueAction(IntegrationConfigModel matchedConfig, String currentUrlWithoutQueueITToken, CustomerIntegration customerIntegrationInfo, String queueitToken, String customerId, HttpServletRequest request, HttpServletResponse response, String secretKey, Map<String, String> debugEntries) throws Exception {
+        String targetUrl;
+        switch (matchedConfig.RedirectLogic) {
+            case "ForecedTargetUrl": // suuport for typo (fall through)
+            case "ForcedTargetUrl":
+                targetUrl = matchedConfig.ForcedTargetUrl;
+                break;
+            case "EventTargetUrl":
+                targetUrl = "";
+                break;
+            default:
+                targetUrl = currentUrlWithoutQueueITToken;
+                break;
+        }
+        
+        QueueEventConfig queueConfig = new QueueEventConfig();
+        queueConfig.setQueueDomain(matchedConfig.QueueDomain);
+        queueConfig.setCulture(matchedConfig.Culture);
+        queueConfig.setEventId(matchedConfig.EventId);
+        queueConfig.setExtendCookieValidity(matchedConfig.ExtendCookieValidity);
+        queueConfig.setLayoutName(matchedConfig.LayoutName);
+        queueConfig.setCookieValidityMinute(matchedConfig.CookieValidityMinute);
+        queueConfig.setCookieDomain(matchedConfig.CookieDomain);
+        queueConfig.setVersion(customerIntegrationInfo.Version);
+        
+        return resolveQueueRequestByLocalConfig(
+                targetUrl, queueitToken, queueConfig, customerId, request, response, secretKey, debugEntries);
+    }
+
+    private static RequestValidationResult handleCancelAction(IntegrationConfigModel matchedConfig, CustomerIntegration customerIntegrationInfo, String currentUrlWithoutQueueITToken, String queueitToken, String customerId, HttpServletRequest request, HttpServletResponse response, String secretKey, Map<String, String> debugEntries) throws Exception {
+        CancelEventConfig cancelConfig = new CancelEventConfig();
+        cancelConfig.setQueueDomain(matchedConfig.QueueDomain);
+        cancelConfig.setEventId(matchedConfig.EventId);
+        cancelConfig.setCookieDomain(matchedConfig.CookieDomain);
+        cancelConfig.setVersion(customerIntegrationInfo.Version);
+        
+        return cancelRequestByLocalConfig(
+                currentUrlWithoutQueueITToken, queueitToken, cancelConfig, customerId, request, response, secretKey, debugEntries);
+    }
+
+    private static RequestValidationResult handleIgnoreAction(HttpServletRequest request, HttpServletResponse response) {
+        IUserInQueueService userInQueueService = getUserInQueueService(request, response);
+        return userInQueueService.getIgnoreActionResult();
     }
 }
 

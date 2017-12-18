@@ -3,8 +3,6 @@ package queueit.knownuserv3.sdk.integrationconfig;
 import javax.servlet.http.Cookie;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Map;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 
 interface IIntegrationEvaluator {
@@ -81,7 +79,8 @@ final class UrlValidatorHelper {
                 triggerPart.IsNegative,
                 triggerPart.IsIgnoreCase,
                 getUrlPart(triggerPart, url),
-                triggerPart.ValueToCompare);
+                triggerPart.ValueToCompare,
+                triggerPart.ValuesToCompare);
     }
 
     private static String getUrlPart(TriggerPart triggerPart, String url) {
@@ -127,7 +126,8 @@ final class CookieValidatorHelper {
                 triggerPart.IsNegative,
                 triggerPart.IsIgnoreCase,
                 getCookie(triggerPart.CookieName, cookieCollection),
-                triggerPart.ValueToCompare);
+                triggerPart.ValueToCompare,
+                triggerPart.ValuesToCompare);
     }
 
     private static String getCookie(String cookieName, Cookie[] cookieCollection) {
@@ -150,51 +150,67 @@ final class UserAgentValidatorHelper {
                 triggerPart.IsNegative,
                 triggerPart.IsIgnoreCase,
                 userAgent,
-                triggerPart.ValueToCompare);
+                triggerPart.ValueToCompare,
+                triggerPart.ValuesToCompare);
     }
 }
 
-    final class HttpHeaderValidatorHelper {
-        public static boolean evaluate(TriggerPart triggerPart, HttpServletRequest request)
-        {
-            return ComparisonOperatorHelper.evaluate(triggerPart.Operator,
-                triggerPart.IsNegative,
-                triggerPart.IsIgnoreCase,
-                request.getHeader(triggerPart.HttpHeaderName),
-                triggerPart.ValueToCompare);
-        }
+final class HttpHeaderValidatorHelper {
+    
+    public static boolean evaluate(TriggerPart triggerPart, HttpServletRequest request)
+    {
+        return ComparisonOperatorHelper.evaluate(triggerPart.Operator,
+            triggerPart.IsNegative,
+            triggerPart.IsIgnoreCase,
+            request.getHeader(triggerPart.HttpHeaderName),
+            triggerPart.ValueToCompare,
+            triggerPart.ValuesToCompare);
     }
+}
 
 final class ComparisonOperatorHelper {
 
-    public static boolean evaluate(String opt, boolean isNegative, boolean isIgnoreCase, String left, String right) {
-        left = (left != null) ? left : "";
-        right = (right != null) ? right : "";
+    public static boolean evaluate(
+            String opt, 
+            boolean isNegative, 
+            boolean isIgnoreCase, 
+            String value, 
+            String valueToCompare, 
+            String[] valuesToCompare) {
+        
+        value = (value != null) ? value : "";
+        valueToCompare = (valueToCompare != null) ? valueToCompare : "";
+        valuesToCompare = (valuesToCompare != null) ? valuesToCompare : new String[0];
+        
         switch (opt) {
             case ComparisonOperatorType.EQUALS:
-                return equals(left, right, isNegative, isIgnoreCase);
+                return equals(value, valueToCompare, isNegative, isIgnoreCase);
             case ComparisonOperatorType.CONTAINS:
-                return contains(left, right, isNegative, isIgnoreCase);
+                return contains(value, valueToCompare, isNegative, isIgnoreCase);
             case ComparisonOperatorType.STARTS_WITH:
-                return startsWith(left, right, isNegative, isIgnoreCase);
+                return startsWith(value, valueToCompare, isNegative, isIgnoreCase);
             case ComparisonOperatorType.ENDS_WITH:
-                return endsWith(left, right, isNegative, isIgnoreCase);
+                return endsWith(value, valueToCompare, isNegative, isIgnoreCase);
             case ComparisonOperatorType.MATCHES_WITH:
-                return matchesWith(left, right, isNegative, isIgnoreCase);
+                return matchesWith(value, valueToCompare, isNegative, isIgnoreCase);
+            case ComparisonOperatorType.EQUALS_ANY:
+                return equalsAny(value, valuesToCompare, isNegative, isIgnoreCase);
+            case ComparisonOperatorType.CONTAINS_ANY:
+                return containsAny(value, valuesToCompare, isNegative, isIgnoreCase);
             default:
                 return false;
         }
     }
 
-    private static boolean contains(String left, String right, boolean isNegative, boolean ignoreCase) {
-        if (right.equals("*")) {
+    private static boolean contains(String value, String valueToCompare, boolean isNegative, boolean ignoreCase) {
+        if (valueToCompare.equals("*")) {
             return true;
         }
         boolean evaluation;
         if (ignoreCase) {
-            evaluation = left.toUpperCase().contains(right.toUpperCase());
+            evaluation = value.toUpperCase().contains(valueToCompare.toUpperCase());
         } else {
-            evaluation = left.contains(right);
+            evaluation = value.contains(valueToCompare);
         }
         if (isNegative) {
             return !evaluation;
@@ -203,13 +219,13 @@ final class ComparisonOperatorHelper {
         }
     }
 
-    private static boolean equals(String left, String right, boolean isNegative, boolean ignoreCase) {
+    private static boolean equals(String value, String valueToCompare, boolean isNegative, boolean ignoreCase) {
         boolean evaluation;
 
         if (ignoreCase) {
-            evaluation = left.toUpperCase().equals(right.toUpperCase());
+            evaluation = value.toUpperCase().equals(valueToCompare.toUpperCase());
         } else {
-            evaluation = left.equals(right);
+            evaluation = value.equals(valueToCompare);
         }
 
         if (isNegative) {
@@ -219,13 +235,13 @@ final class ComparisonOperatorHelper {
         }
     }
 
-    private static boolean endsWith(String left, String right, boolean isNegative, boolean ignoreCase) {
+    private static boolean endsWith(String value, String valueToCompare, boolean isNegative, boolean ignoreCase) {
         boolean evaluation;
 
         if (ignoreCase) {
-            evaluation = left.toUpperCase().endsWith(right.toUpperCase());
+            evaluation = value.toUpperCase().endsWith(valueToCompare.toUpperCase());
         } else {
-            evaluation = left.endsWith(right);
+            evaluation = value.endsWith(valueToCompare);
         }
 
         if (isNegative) {
@@ -235,13 +251,13 @@ final class ComparisonOperatorHelper {
         }
     }
 
-    private static boolean startsWith(String left, String right, boolean isNegative, boolean ignoreCase) {
+    private static boolean startsWith(String value, String valueToCompare, boolean isNegative, boolean ignoreCase) {
         boolean evaluation;
 
         if (ignoreCase) {
-            evaluation = left.toUpperCase().startsWith(right.toUpperCase());
+            evaluation = value.toUpperCase().startsWith(valueToCompare.toUpperCase());
         } else {
-            evaluation = left.startsWith(right);
+            evaluation = value.startsWith(valueToCompare);
         }
 
         if (isNegative) {
@@ -251,19 +267,35 @@ final class ComparisonOperatorHelper {
         }
     }
 
-    private static boolean matchesWith(String left, String right, boolean isNegative, boolean isIgnoreCase) {
+    private static boolean matchesWith(String value, String valueToCompare, boolean isNegative, boolean isIgnoreCase) {
         Pattern pattern;
         if (isIgnoreCase) {
-            pattern = Pattern.compile(right, Pattern.CASE_INSENSITIVE);
+            pattern = Pattern.compile(valueToCompare, Pattern.CASE_INSENSITIVE);
         } else {
-            pattern = Pattern.compile(right);
+            pattern = Pattern.compile(valueToCompare);
         }
 
-        boolean evaluation = pattern.matcher(left).matches();
+        boolean evaluation = pattern.matcher(value).matches();
         if (isNegative) {
             return !evaluation;
         } else {
             return evaluation;
         }
+    }
+    
+    private static boolean equalsAny(String value, String[] valuesToCompare, boolean isNegative, boolean isIgnoreCase) {
+        for (String valueToCompare : valuesToCompare) {
+            if(equals(value, valueToCompare, false, isIgnoreCase))
+                return !isNegative;
+        }
+        return isNegative;
+    }
+    
+    private static boolean containsAny(String value, String[] valuesToCompare, boolean isNegative, boolean isIgnoreCase) {
+        for (String valueToCompare : valuesToCompare) {
+            if(contains(value, valueToCompare, false, isIgnoreCase))
+                return !isNegative;
+        }
+        return isNegative;
     }
 }

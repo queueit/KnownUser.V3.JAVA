@@ -25,11 +25,13 @@ interface IUserInQueueService {
             String cookieDomain,
             String secretKey
     );
+    
+    RequestValidationResult getIgnoreActionResult();
 }
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "3.3.2";
+    public static final String SDK_VERSION = "3.4.0";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(
@@ -168,7 +170,10 @@ class UserInQueueService implements IUserInQueueService {
     
     @Override
     public RequestValidationResult validateCancelRequest(
-            String targetUrl, CancelEventConfig config, String customerId, String secretKey) throws Exception {
+            String targetUrl, 
+            CancelEventConfig config, 
+            String customerId, 
+            String secretKey) throws Exception {
             
         StateInfo state = _userInQueueStateRepository.getState(config.getEventId(), secretKey);
 
@@ -192,5 +197,10 @@ class UserInQueueService implements IUserInQueueService {
         {
             return new RequestValidationResult(ActionType.CANCEL_ACTION, config.getEventId(), null, null);
         }
+    }
+    
+    @Override
+    public RequestValidationResult getIgnoreActionResult() {
+        return new RequestValidationResult(ActionType.IGNORE_ACTION, null, null, null);
     }
 }

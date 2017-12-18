@@ -42,7 +42,8 @@ public class KnownUserTest {
         public ArrayList<ArrayList<String>> validateQueueRequestCalls = new ArrayList<>();
         public ArrayList<ArrayList<String>> validateCancelRequestCalls = new ArrayList<>();
         public ArrayList<ArrayList<String>> extendQueueCookieCalls = new ArrayList<>();
-
+        public ArrayList<ArrayList<String>> getIgnoreActionResultCalls = new ArrayList<>();
+        
         @Override
         public RequestValidationResult validateQueueRequest(String targetUrl, String queueitToken, QueueEventConfig config, String customerId, String secretKey) throws Exception {
             ArrayList<String> args = new ArrayList<>();
@@ -91,6 +92,12 @@ public class KnownUserTest {
             args.add(cookieDomain);
             args.add(secretKey);
             extendQueueCookieCalls.add(args);
+        }
+
+        @Override
+        public RequestValidationResult getIgnoreActionResult() {
+            getIgnoreActionResultCalls.add(new ArrayList<>());
+            return null;            
         }
     }
 
@@ -942,6 +949,43 @@ public class KnownUserTest {
         // Assert
         assertTrue(mock.validateQueueRequestCalls.size() == 1);
         assertTrue("".equals(mock.validateQueueRequestCalls.get(0).get(0)));
+    }
+    
+    @Test
+    public void validateRequestByIntegrationConfigIgnoreAction() throws Exception {
+        // Arrange
+        UserInQueueServiceMock mock = new UserInQueueServiceMock();
+        KnownUser.setUserInQueueService(mock);
+
+        TriggerPart triggerPart = new TriggerPart();
+        triggerPart.Operator = "Contains";
+        triggerPart.ValueToCompare = "event1";
+        triggerPart.UrlPart = "PageUrl";
+        triggerPart.ValidatorType = "UrlValidator";
+        triggerPart.IsNegative = false;
+        triggerPart.IsIgnoreCase = true;
+
+        TriggerModel trigger = new TriggerModel();
+        trigger.LogicalOperator = "And";
+        trigger.TriggerParts = new TriggerPart[]{triggerPart};
+
+        IntegrationConfigModel config = new IntegrationConfigModel();
+        config.Name = "event1action";
+        config.EventId = "event1";
+        config.CookieDomain = "cookiedomain";
+        config.Triggers = new TriggerModel[]{trigger};
+        config.QueueDomain = "queuedomain";        
+        config.ActionType = ActionType.IGNORE_ACTION;
+
+        CustomerIntegration customerIntegration = new CustomerIntegration();
+        customerIntegration.Integrations = new IntegrationConfigModel[]{config};
+        customerIntegration.Version = 3;
+
+        // Act
+        KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
+
+        // Assert
+        assertTrue(mock.getIgnoreActionResultCalls.size() == 1);        
     }
     
     @Test

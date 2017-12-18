@@ -22,6 +22,8 @@ final class ComparisonOperatorType {
     public static final String STARTS_WITH = "StartsWith";
     public static final String ENDS_WITH = "EndsWith";
     public static final String MATCHES_WITH = "MatchesWith";
+    public static final String EQUALS_ANY = "EqualsAny";
+    public static final String CONTAINS_ANY = "ContainsAny";
 }
 
 final class LogicalOperatorType {

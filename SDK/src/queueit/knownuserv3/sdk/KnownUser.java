@@ -68,7 +68,7 @@ public class KnownUser {
             }
 
             if (matchedConfig == null) {
-                return new RequestValidationResult(null, null, null, null);
+                return new RequestValidationResult(null, null, null, null, null);
             }
 
             // unspecified or 'Queue' specified
@@ -343,7 +343,6 @@ class CookieManager implements ICookieManager {
             cookie.setDomain(cookieDomain);
         }
 
-        cookie.setHttpOnly(true);
         response.addCookie(cookie);
     }
 

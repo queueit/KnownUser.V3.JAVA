@@ -78,16 +78,16 @@ public class QueueEventConfig {
     public QueueEventConfig() {
         this.version = -1;
     }
-    
+
     @Override
     public String toString() {
-       return "EventId:" + eventId + 
-              "&Version:" + version +
-              "&QueueDomain:" + queueDomain + 
-              "&CookieDomain:" + cookieDomain + 
-              "&ExtendCookieValidity:" + extendCookieValidity +
-              "&CookieValidityMinute:" + cookieValidityMinute + 
-              "&LayoutName:" + layoutName + 
-              "&Culture:" + culture;
+        return "EventId:" + eventId
+                + "&Version:" + version
+                + "&QueueDomain:" + queueDomain
+                + "&CookieDomain:" + cookieDomain
+                + "&ExtendCookieValidity:" + extendCookieValidity
+                + "&CookieValidityMinute:" + cookieValidityMinute
+                + "&LayoutName:" + layoutName
+                + "&Culture:" + culture;
     }
 }

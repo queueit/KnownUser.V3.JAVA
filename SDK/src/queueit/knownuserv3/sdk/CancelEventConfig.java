@@ -14,7 +14,7 @@ public class CancelEventConfig {
     public void setEventId(String eventId) {
         this.eventId = eventId;
     }
-    
+
     public String getQueueDomain() {
         return queueDomain;
     }
@@ -42,12 +42,12 @@ public class CancelEventConfig {
     public CancelEventConfig() {
         this.version = -1;
     }
-    
+
     @Override
     public String toString() {
-        return "EventId:" + eventId + 
-               "&Version:" + version +
-               "&QueueDomain:" + queueDomain + 
-               "&CookieDomain:" + cookieDomain;
+        return "EventId:" + eventId
+                + "&Version:" + version
+                + "&QueueDomain:" + queueDomain
+                + "&CookieDomain:" + cookieDomain;
     }
 }

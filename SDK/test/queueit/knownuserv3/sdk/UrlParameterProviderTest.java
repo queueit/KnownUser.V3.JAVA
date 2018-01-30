@@ -13,7 +13,7 @@ public class UrlParameterProviderTest {
         QueueUrlParams queueParameter = QueueParameterHelper.extractQueueParams(queueitToken);
         assertTrue(queueParameter.getTimeStamp() == 1480593661);
         assertTrue("eventid".equals(queueParameter.getEventId()));
-        assertTrue(queueParameter.getCookieValidityMinute() == 10);
+        assertTrue(queueParameter.getCookieValidityMinutes() == 10);
         assertTrue(queueParameter.getExtendableCookie() == false);
         assertTrue("218b734e-d5be-4b60-ad66-9b1b326266e2".equals(queueParameter.getHashCode()));
         assertTrue(Objects.equals(queueParameter.getQueueITToken(), queueitToken));
@@ -27,7 +27,7 @@ public class UrlParameterProviderTest {
         QueueUrlParams queueParameter = QueueParameterHelper.extractQueueParams(queueitToken);
         assertTrue(queueParameter.getTimeStamp() == 0);
         assertTrue("".equals(queueParameter.getEventId()));
-        assertTrue(queueParameter.getCookieValidityMinute() == null);
+        assertTrue(queueParameter.getCookieValidityMinutes() == null);
         assertTrue(queueParameter.getExtendableCookie() == false);
         assertTrue("".equals(queueParameter.getHashCode()));
         assertTrue(Objects.equals(queueParameter.getQueueITToken(), queueitToken));

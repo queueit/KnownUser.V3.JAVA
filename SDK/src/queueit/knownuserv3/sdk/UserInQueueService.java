@@ -18,20 +18,20 @@ interface IUserInQueueService {
             CancelEventConfig config,
             String customerId,
             String secretKey) throws Exception;
-    
+
     void extendQueueCookie(
             String eventId,
-            int cookieValidityMinute,
+            int cookieValidityMinutes,
             String cookieDomain,
             String secretKey
     );
-    
+
     RequestValidationResult getIgnoreActionResult();
 }
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "3.4.0";
+    public static final String SDK_VERSION = "3.5.0";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(
@@ -47,17 +47,18 @@ class UserInQueueService implements IUserInQueueService {
             String customerId,
             String secretKey
     ) throws Exception {
-        StateInfo stateInfo = this._userInQueueStateRepository.getState(config.getEventId(), secretKey);
+        StateInfo stateInfo = this._userInQueueStateRepository.getState(config.getEventId(), config.getCookieValidityMinute(), secretKey, true);
         if (stateInfo.isValid()) {
             if (stateInfo.isStateExtendable() && config.getExtendCookieValidity()) {
-                this._userInQueueStateRepository.store(config.getEventId(),
+                this._userInQueueStateRepository.store(
+                        config.getEventId(),
                         stateInfo.getQueueId(),
-                        true,
+                        null,
                         config.getCookieDomain(),
-                        config.getCookieValidityMinute(),
+                        stateInfo.getRedirectType(),
                         secretKey);
             }
-            return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), stateInfo.getQueueId(), null);
+            return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), stateInfo.getQueueId(), null, stateInfo.getRedirectType());
         }
 
         QueueUrlParams queueParmas = QueueParameterHelper.extractQueueParams(queueitToken);
@@ -92,12 +93,12 @@ class UserInQueueService implements IUserInQueueService {
         this._userInQueueStateRepository.store(
                 config.getEventId(),
                 queueParams.getQueueId(),
-                queueParams.getExtendableCookie(),
+                queueParams.getCookieValidityMinutes(),
                 config.getCookieDomain(),
-                queueParams.getCookieValidityMinute() != null ? queueParams.getCookieValidityMinute() : config.getCookieValidityMinute(),
+                queueParams.getRedirectType(),
                 secretKey);
 
-        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), queueParams.getQueueId(), null);
+        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), queueParams.getQueueId(), null, queueParams.getRedirectType());
     }
 
     private RequestValidationResult getVaidationErrorResult(
@@ -110,8 +111,7 @@ class UserInQueueService implements IUserInQueueService {
         String query = getQueryString(customerId, config.getEventId(), config.getVersion(), config.getCulture(), config.getLayoutName())
                 + "&queueittoken=" + qParams.getQueueITToken()
                 + "&ts=" + System.currentTimeMillis() / 1000L;
-        if(!Utils.isNullOrWhiteSpace(targetUrl))
-        {
+        if (!Utils.isNullOrWhiteSpace(targetUrl)) {
             query += "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
         }
         String domainAlias = config.getQueueDomain();
@@ -119,7 +119,7 @@ class UserInQueueService implements IUserInQueueService {
             domainAlias = domainAlias + "/";
         }
         String redirectUrl = "https://" + domainAlias + "error/" + errorCode + "/?" + query;
-        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl);
+        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl, null);
     }
 
     private RequestValidationResult getInQueueRedirectResult(
@@ -129,11 +129,11 @@ class UserInQueueService implements IUserInQueueService {
 
         String redirectUrl = "https://" + config.getQueueDomain() + "?"
                 + getQueryString(customerId, config.getEventId(), config.getVersion(), config.getCulture(), config.getLayoutName());
-        if(!Utils.isNullOrWhiteSpace(targetUrl)) {
+        if (!Utils.isNullOrWhiteSpace(targetUrl)) {
             redirectUrl += "&t=" + URLEncoder.encode(targetUrl, "UTF-8");
         }
-                
-        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl);
+
+        return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl, null);
     }
 
     private String getQueryString(
@@ -158,49 +158,49 @@ class UserInQueueService implements IUserInQueueService {
 
         return String.join("&", queryStringList);
     }
-   
+
     @Override
     public void extendQueueCookie(
             String eventId,
             int cookieValidityMinute,
             String cookieDomain,
             String secretKey) {
-        this._userInQueueStateRepository.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
+        this._userInQueueStateRepository.reissueQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
     }
-    
+
     @Override
     public RequestValidationResult validateCancelRequest(
-            String targetUrl, 
-            CancelEventConfig config, 
-            String customerId, 
+            String targetUrl,
+            CancelEventConfig config,
+            String customerId,
             String secretKey) throws Exception {
-            
-        StateInfo state = _userInQueueStateRepository.getState(config.getEventId(), secretKey);
+
+        StateInfo state = _userInQueueStateRepository.getState(config.getEventId(), -1, secretKey, false);
 
         if (state.isValid()) {
             this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain());
 
             String query = getQueryString(customerId, config.getEventId(), config.getVersion(), null, null);
-            
-            if(targetUrl != null)
+
+            if (targetUrl != null) {
                 query += "&r=" + URLEncoder.encode(targetUrl, "UTF-8");
+            }
 
             String domainAlias = config.getQueueDomain();
-            if (!domainAlias.endsWith("/"))
+            if (!domainAlias.endsWith("/")) {
                 domainAlias = domainAlias + "/";
+            }
 
             String redirectUrl = "https://" + domainAlias + "cancel/" + customerId + "/" + config.getEventId() + "/?" + query;
 
-            return new RequestValidationResult(ActionType.CANCEL_ACTION, config.getEventId(), state.getQueueId(), redirectUrl);
-        }
-        else
-        {
-            return new RequestValidationResult(ActionType.CANCEL_ACTION, config.getEventId(), null, null);
+            return new RequestValidationResult(ActionType.CANCEL_ACTION, config.getEventId(), state.getQueueId(), redirectUrl, state.getRedirectType());
+        } else {
+            return new RequestValidationResult(ActionType.CANCEL_ACTION, config.getEventId(), null, null, null);
         }
     }
-    
+
     @Override
     public RequestValidationResult getIgnoreActionResult() {
-        return new RequestValidationResult(ActionType.IGNORE_ACTION, null, null, null);
+        return new RequestValidationResult(ActionType.IGNORE_ACTION, null, null, null, null);
     }
 }

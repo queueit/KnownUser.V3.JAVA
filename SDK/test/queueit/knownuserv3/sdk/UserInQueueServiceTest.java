@@ -28,16 +28,6 @@ public class UserInQueueServiceTest {
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
-            @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                conditions.replace("isStoreWasCalled", true);
-            }
-
-            @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(true, "queueId", true, System.currentTimeMillis() / 1000L + 10 * 60);
-
-            }
 
             @Override
             public void cancelQueueCookie(String eventId, String cookieDomain) {
@@ -45,7 +35,18 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void store(String eventId, String queueId,Integer fixedCookieValidityMinutes, String cookieDomainString, 
+                String redirectType, String customerSecretKey) throws Exception {
+                 conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(true, "queueId", null, "queue");
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
@@ -56,10 +57,11 @@ public class UserInQueueServiceTest {
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(result.getEventId().equals("e1"));
         assertTrue(result.getQueueId().equals("queueId"));
+        assertTrue(result.getRedirectType().equals("queue"));
     }
 
     @Test
-    public void validateQueueRequest_ValidState_ExtendableCookie_CookieExtensionFromConfig_DoNotRedirectDoStoreCookieWithExtension() throws Exception {
+    public void validateQueueRequest_ValidState_ExtendableCookie_CookieExtensionFromConfig_DoNotRedirect_DoStoreCookieWithExtension() throws Exception {
 
         QueueEventConfig config = new QueueEventConfig();
         config.setEventId("e1");
@@ -71,11 +73,11 @@ public class UserInQueueServiceTest {
         callInfo.put("firstCall", new HashMap<>());
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain,
-                    int cookieValidityMinute, String customerSecretKey) throws Exception {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
                 HashMap<String, Object> info = new HashMap<>();
                 info.put("eventId", eventId);
-                info.put("isStateExtendable", isStateExtendable);
+                info.put("fixedCookieValidityMinutes", fixedCookieValidityMinutes);
+                info.put("redirectType", redirectType);
                 info.put("cookieDomain", cookieDomain);
                 info.put("queueId", queueId);
                 info.put("customerSecretKey", customerSecretKey);
@@ -83,8 +85,8 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(true, "queueId", true, System.currentTimeMillis() / 1000L + 10 * 60);
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(true, "queueId", null, "queue");
 
             }
 
@@ -94,7 +96,7 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
@@ -105,13 +107,13 @@ public class UserInQueueServiceTest {
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("queueId").equals("queueId"));
         assertTrue(callInfo.get("firstCall").get("eventId").equals("e1"));
-        assertTrue(callInfo.get("firstCall").get("isStateExtendable").equals(true));
+        assertTrue(callInfo.get("firstCall").get("redirectType").equals("queue"));
         assertTrue(callInfo.get("firstCall").get("customerSecretKey").equals("key"));
         assertTrue(callInfo.get("firstCall").get("cookieDomain").equals(".testdomain.com"));
     }
 
     @Test
-    public void validateQueueRequest_ValidState_NoExtendableCookie_DoNotRedirectDoNotStoreCookieWithExtension()
+    public void validateQueueRequest_ValidState_NoExtendableCookie_DoNotRedirect_DoNotStoreCookieWithExtension()
             throws Exception {
 
         QueueEventConfig config = new QueueEventConfig();
@@ -125,14 +127,14 @@ public class UserInQueueServiceTest {
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+                HashMap<String, Object> info = new HashMap<>();
                 conditions.replace("isStoreWasCalled", true);
             }
 
             @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(true, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
-
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(true, "queueId", "3", "idle");
             }
 
             @Override
@@ -141,7 +143,7 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
@@ -168,29 +170,28 @@ public class UserInQueueServiceTest {
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                conditions.replace("isStoreWasCalled", true);
-            }
-
-            @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
-
-            }
-
-            @Override
             public void cancelQueueCookie(String eventId, String cookieDomain) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+                conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
 
         String customerKey = "4e1db821-a825-49da-acd0-5d376f2068db";
-        String queueitToken = QueueITTokenGenerator.generateToken(new Date(), "e1", false, 20, customerKey);
+        String queueitToken = QueueITTokenGenerator.generateToken(new Date(), "e1", false, 20, customerKey, "queue");
         queueitToken = queueitToken.replace("false", "true");
 
         String targetUrl = "http://test.test.com?b=h";
@@ -233,30 +234,29 @@ public class UserInQueueServiceTest {
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                conditions.replace("isStoreWasCalled", true);
-            }
-
-            @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
-
-            }
-
-            @Override
             public void cancelQueueCookie(String eventId, String cookieDomain) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+                conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
 
         Date date = new Date();
         date.setTime(date.getTime() - 1000 * 60 * 60);
-        String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, 20, customerKey);
+        String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, 20, customerKey, "queue");
 
         String targetUrl = "http://test.test.com?b=h";
         String knownUserVersion = UserInQueueService.SDK_VERSION;
@@ -298,30 +298,29 @@ public class UserInQueueServiceTest {
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                conditions.replace("isStoreWasCalled", true);
-            }
-
-            @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
-
-            }
-
-            @Override
             public void cancelQueueCookie(String eventId, String cookieDomain) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+                conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
 
         Date date = new Date();
         date.setTime(date.getTime() + 1000 * 60 * 60);
-        String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, null, customerKey);
+        String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, null, customerKey, "queue");
 
         String targetUrl = "http://test.test.com?b=h";
         String knownUserVersion = UserInQueueService.SDK_VERSION;
@@ -361,20 +360,20 @@ public class UserInQueueServiceTest {
         callInfo.put("firstCall", new HashMap<>());
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain,
-                    int cookieValidityMinute, String customerSecretKey) throws Exception {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
+                    String redirectType, String customerSecretKey) throws Exception {
                 HashMap<String, Object> info = new HashMap<>();
                 info.put("eventId", eventId);
-                info.put("isStateExtendable", isStateExtendable);
+                info.put("fixedCookieValidityMinutes", fixedCookieValidityMinutes);
                 info.put("cookieDomain", cookieDomain);
-                info.put("cookieValidityMinute", cookieValidityMinute);
+                info.put("redirectType", redirectType);
                 info.put("customerSecretKey", customerSecretKey);
                 callInfo.put("firstCall", info);
             }
 
             @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
             }
 
             @Override
@@ -383,14 +382,14 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
 
         Date date = new Date();
         date.setTime(date.getTime() + 1000 * 60 * 60);
-        String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, null, customerKey);
+        String queueitToken = QueueITTokenGenerator.generateToken(date, "e1", true, null, customerKey, "queue");
 
         String targetUrl = "http://test.test.com?b=h";
 
@@ -398,9 +397,9 @@ public class UserInQueueServiceTest {
         RequestValidationResult result = testObject.validateQueueRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("eventId").equals(config.getEventId()));
-        assertTrue(callInfo.get("firstCall").get("isStateExtendable").equals(true));
+        assertTrue(callInfo.get("firstCall").get("fixedCookieValidityMinutes") == null);
         assertTrue(callInfo.get("firstCall").get("cookieDomain").equals(config.getCookieDomain()));
-        assertTrue(callInfo.get("firstCall").get("cookieValidityMinute").equals(config.getCookieValidityMinute()));
+        assertTrue(callInfo.get("firstCall").get("redirectType").equals("queue"));
         assertTrue(callInfo.get("firstCall").get("customerSecretKey").equals(customerKey));
     }
 
@@ -417,20 +416,20 @@ public class UserInQueueServiceTest {
         callInfo.put("firstCall", new HashMap<>());
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain,
-                    int cookieValidityMinute, String customerSecretKey) throws Exception {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
+                    String redirectType, String customerSecretKey) throws Exception {
                 HashMap<String, Object> info = new HashMap<>();
                 info.put("eventId", eventId);
-                info.put("isStateExtendable", isStateExtendable);
+                info.put("fixedCookieValidityMinutes", fixedCookieValidityMinutes);
                 info.put("cookieDomain", cookieDomain);
-                info.put("cookieValidityMinute", cookieValidityMinute);
+                info.put("redirectType", redirectType);
                 info.put("customerSecretKey", customerSecretKey);
                 callInfo.put("firstCall", info);
             }
 
             @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
             }
 
             @Override
@@ -439,7 +438,7 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
@@ -451,9 +450,9 @@ public class UserInQueueServiceTest {
         RequestValidationResult result = testObject.validateQueueRequest(targetUrl, queueitToken, config, "testCustomer", customerKey);
         assertTrue(!result.doRedirect());
         assertTrue(callInfo.get("firstCall").get("eventId").equals(config.getEventId()));
-        assertTrue(callInfo.get("firstCall").get("isStateExtendable").equals(false));
+        assertTrue(callInfo.get("firstCall").get("redirectType").equals("DirectLink"));
         assertTrue(callInfo.get("firstCall").get("cookieDomain").equals(config.getCookieDomain()));
-        assertTrue(callInfo.get("firstCall").get("cookieValidityMinute").equals(3));
+        assertTrue(callInfo.get("firstCall").get("fixedCookieValidityMinutes").equals(3));
         assertTrue(callInfo.get("firstCall").get("customerSecretKey").equals(customerKey));
         assertTrue(config.getEventId().equals(result.getEventId()));
     }
@@ -473,23 +472,22 @@ public class UserInQueueServiceTest {
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                conditions.replace("isStoreWasCalled", true);
-            }
-
-            @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
-
-            }
-
-            @Override
             public void cancelQueueCookie(String eventId, String cookieDomain) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+                conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
@@ -509,7 +507,7 @@ public class UserInQueueServiceTest {
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(config.getEventId().equals(result.getEventId()));
     }
-    
+
     @Test
     public void ValidateQueueRequest_NoCookie_WithoutToken_RedirectToQueue_NoTargetUrl() throws Exception {
         QueueEventConfig config = new QueueEventConfig();
@@ -525,28 +523,26 @@ public class UserInQueueServiceTest {
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                conditions.replace("isStoreWasCalled", true);
-            }
-
-            @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
-
-            }
-
-            @Override
             public void cancelQueueCookie(String eventId, String cookieDomain) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+                conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
 
-        
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedErrorUrl = "https://testDomain.com?c=testCustomer&e=e1"
                 + "&ver=v3-java-" + knownUserVersion
@@ -576,23 +572,22 @@ public class UserInQueueServiceTest {
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                conditions.replace("isStoreWasCalled", true);
-            }
-
-            @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(false, "queueId", false, System.currentTimeMillis() / 1000L + 10 * 60);
-
-            }
-
-            @Override
             public void cancelQueueCookie(String eventId, String cookieDomain) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
             @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+                conditions.replace("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                return new StateInfo(false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
@@ -612,7 +607,7 @@ public class UserInQueueServiceTest {
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(config.getEventId().equals(result.getEventId()));
     }
-    
+
     @Test
     public void validateCancelRequest() throws Exception {
         CancelEventConfig config = new CancelEventConfig();
@@ -622,16 +617,26 @@ public class UserInQueueServiceTest {
         config.setVersion(10);
 
         HashMap<String, String> conditions = new HashMap<>();
-        
+
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
+
             @Override
-            public void store(String eventId, String queueId, boolean isStateExtendable, String cookieDomain, int cookieValidityMinute, String customerSecretKey) throws Exception {
-                throw new UnsupportedOperationException("Unsupported");
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain, String redirectType, String customerSecretKey) throws Exception {
+
             }
 
             @Override
-            public StateInfo getState(String eventId, String customerSecretKey) {
-                return new StateInfo(true, "queueId", true, System.currentTimeMillis() / 1000L + 10 * 60);
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey, boolean validateTime) {
+                if (!validateTime) {
+                    return new StateInfo(true, "queueId", null, "queue");
+                } else {
+                    return new StateInfo(false, null, null, null);
+                }
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain, String secretKey) {
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
             @Override
@@ -639,12 +644,7 @@ public class UserInQueueServiceTest {
                 conditions.put("cancelQueueCookieWasCalled", "eventId:" + eventId + ",cookieDomain:" + cookieDomain);
             }
 
-            @Override
-            public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
-                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            }
         };
-
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedUrl = "https://testDomain.com/cancel/testCustomer/e1/?c=testCustomer&e=e1"
                 + "&ver=v3-java-" + knownUserVersion
@@ -660,7 +660,7 @@ public class UserInQueueServiceTest {
         assertTrue(expectedUrl.equals(result.getRedirectUrl()));
         assertTrue(config.getEventId().equals(result.getEventId()));
     }
-    
+
     @Test
     public void getIgnoreRequest() throws Exception {
         UserInQueueService testObject = new UserInQueueService(null);
@@ -679,15 +679,17 @@ public class UserInQueueServiceTest {
                 String eventId,
                 boolean extendableCookie,
                 Integer cookieValidityMinute,
-                String secretKey
+                String secretKey,
+                String redirectType
         ) throws Exception {
             ArrayList<String> paramList = new ArrayList<>();
             paramList.add(QueueParameterHelper.TimeStampKey + QueueParameterHelper.KeyValueSeparatorChar + GetUnixTimestamp(timeStamp));
             if (cookieValidityMinute != null) {
-                paramList.add(QueueParameterHelper.CookieValidityMinuteKey + QueueParameterHelper.KeyValueSeparatorChar + cookieValidityMinute);
+                paramList.add(QueueParameterHelper.CookieValidityMinutesKey + QueueParameterHelper.KeyValueSeparatorChar + cookieValidityMinute);
             }
             paramList.add(QueueParameterHelper.EventIdKey + QueueParameterHelper.KeyValueSeparatorChar + eventId);
             paramList.add(QueueParameterHelper.ExtendableCookieKey + QueueParameterHelper.KeyValueSeparatorChar + extendableCookie);
+            paramList.add(QueueParameterHelper.RedirectTypeKey + QueueParameterHelper.KeyValueSeparatorChar + redirectType);
 
             String tokenWithoutHash = String.join(QueueParameterHelper.KeyValueSeparatorGroupChar, paramList);
             String hash = HashHelper.generateSHA256Hash(secretKey, tokenWithoutHash);

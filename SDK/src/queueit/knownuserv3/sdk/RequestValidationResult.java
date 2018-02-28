@@ -1,5 +1,8 @@
 package queueit.knownuserv3.sdk;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 public class RequestValidationResult {
 
     private String actionType;
@@ -7,6 +10,7 @@ public class RequestValidationResult {
     private String redirectUrl;
     private String queueId;
     private String redirectType;
+    public boolean isAjaxResult;
 
     public RequestValidationResult(String actionType, String eventId, String queueId, String redirectUrl, String redirectType) {
         this.actionType = actionType;
@@ -38,6 +42,20 @@ public class RequestValidationResult {
 
     public String getRedirectType() {
         return this.redirectType;
+    }
+
+    public String getAjaxQueueRedirectHeaderKey() {
+        return "x-queueit-redirect";
+    }
+
+    public String getAjaxRedirectUrl() {
+        try {
+            if (!Utils.isNullOrWhiteSpace(redirectUrl)) {
+                return URLEncoder.encode(redirectUrl, "UTF-8");
+            }
+        } catch (UnsupportedEncodingException e) {           
+        }
+        return "";
     }
 }
 

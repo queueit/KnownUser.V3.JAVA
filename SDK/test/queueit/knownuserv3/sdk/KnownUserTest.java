@@ -6,7 +6,6 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.security.Principal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -28,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 import queueit.knownuserv3.sdk.integrationconfig.CustomerIntegration;
@@ -43,7 +43,7 @@ public class KnownUserTest {
         public ArrayList<ArrayList<String>> validateCancelRequestCalls = new ArrayList<>();
         public ArrayList<ArrayList<String>> extendQueueCookieCalls = new ArrayList<>();
         public ArrayList<ArrayList<String>> getIgnoreActionResultCalls = new ArrayList<>();
-        
+
         @Override
         public RequestValidationResult validateQueueRequest(String targetUrl, String queueitToken, QueueEventConfig config, String customerId, String secretKey) throws Exception {
             ArrayList<String> args = new ArrayList<>();
@@ -61,16 +61,16 @@ public class KnownUserTest {
             args.add(secretKey);
             validateQueueRequestCalls.add(args);
 
-            return null;
+            return new RequestValidationResult("Queue", "", "", "", "");
         }
 
         @Override
         public RequestValidationResult validateCancelRequest(
-            String targetUrl,
-            CancelEventConfig config,
-            String customerId,
-            String secretKey) throws Exception {
-        
+                String targetUrl,
+                CancelEventConfig config,
+                String customerId,
+                String secretKey) throws Exception {
+
             ArrayList<String> args = new ArrayList<>();
             args.add(targetUrl);
             args.add(config.getCookieDomain() + ":"
@@ -81,9 +81,9 @@ public class KnownUserTest {
             args.add(secretKey);
             validateCancelRequestCalls.add(args);
 
-            return null;
+            return new RequestValidationResult("Cancel", "", "", "", "");
         }
-        
+
         @Override
         public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
             ArrayList<String> args = new ArrayList<>();
@@ -97,13 +97,16 @@ public class KnownUserTest {
         @Override
         public RequestValidationResult getIgnoreActionResult() {
             getIgnoreActionResultCalls.add(new ArrayList<>());
-            return null;            
+            return new RequestValidationResult("Ignore", "", "", "", "");
         }
     }
 
     @Test
     public void cancelRequestByLocalConfigTest() throws Exception {
-        // Arrange
+        // Arrange		
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        HttpServletResponseMock responseMock = new HttpServletResponseMock();
+
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
         CancelEventConfig cancelEventConfig = new CancelEventConfig();
@@ -111,17 +114,43 @@ public class KnownUserTest {
         cancelEventConfig.setEventId("eventid");
         cancelEventConfig.setQueueDomain("queuedomain");
         cancelEventConfig.setVersion(1);
-        
+
         // Act
-        KnownUser.cancelRequestByLocalConfig("url", "queueitToken", cancelEventConfig,"customerid",null, null, "secretkey");
+        RequestValidationResult result = KnownUser.cancelRequestByLocalConfig("url", "queueitToken", cancelEventConfig, "customerid", requestMock, responseMock, "secretkey");
 
         // Assert
         assertTrue("url".equals(mock.validateCancelRequestCalls.get(0).get(0)));
         assertTrue("cookiedomain:eventid:queuedomain:1".equals(mock.validateCancelRequestCalls.get(0).get(1)));
         assertTrue("customerid".equals(mock.validateCancelRequestCalls.get(0).get(2)));
         assertTrue("secretkey".equals(mock.validateCancelRequestCalls.get(0).get(3)));
+        assertFalse(result.isAjaxResult);
     }
-    
+
+    @Test
+    public void CancelRequestByLocalConfig_AjaxCall_Test() throws Exception {
+        // Arrange
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.Headers.put("x-queueit-ajaxpageurl", "http%3A%2F%2Furl");
+
+        UserInQueueServiceMock mock = new UserInQueueServiceMock();
+        KnownUser.setUserInQueueService(mock);
+        CancelEventConfig cancelEventConfig = new CancelEventConfig();
+        cancelEventConfig.setCookieDomain("cookiedomain");
+        cancelEventConfig.setEventId("eventid");
+        cancelEventConfig.setQueueDomain("queuedomain");
+        cancelEventConfig.setVersion(1);
+
+        // Act
+        RequestValidationResult result = KnownUser.cancelRequestByLocalConfig("url", "queueitToken", cancelEventConfig, "customerid", requestMock, null, "secretkey");
+
+        // Assert
+        assertTrue("http://url".equals(mock.validateCancelRequestCalls.get(0).get(0)));
+        assertTrue("cookiedomain:eventid:queuedomain:1".equals(mock.validateCancelRequestCalls.get(0).get(1)));
+        assertTrue("customerid".equals(mock.validateCancelRequestCalls.get(0).get(2)));
+        assertTrue("secretkey".equals(mock.validateCancelRequestCalls.get(0).get(3)));
+        assertTrue(result.isAjaxResult);
+    }
+
     @Test
     public void cancelRequestByLocalConfigDebugCookieLoggingTest() throws Exception {
         // Arrange
@@ -132,7 +161,7 @@ public class KnownUserTest {
         cancelEventConfig.setEventId("eventid");
         cancelEventConfig.setQueueDomain("queuedomain");
         cancelEventConfig.setVersion(1);
-        
+
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.RequestURL = "requestUrl";
         requestMock.RemoteAddr = "80.35.35.34";
@@ -141,15 +170,15 @@ public class KnownUserTest {
         requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
         requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
         requestMock.Headers.put("x-forwarded-proto", "https");
-        
+
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
-        
+
         // Act
         String secretKey = "secretkey";
         String queueittoken = QueueITTokenGenerator.generateToken("eventId", secretKey);
-        
+
         KnownUser.cancelRequestByLocalConfig("url", queueittoken, cancelEventConfig, "customerId", requestMock, responseMock, secretKey);
-        
+
         // Assert
         assertTrue(responseMock.addedCookies.size() == 1);
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
@@ -158,7 +187,7 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("|CancelConfig=EventId:eventid"));
         assertTrue(decodedCookieValue.contains("&Version:1"));
         assertTrue(decodedCookieValue.contains("&QueueDomain:queuedomain"));
-        assertTrue(decodedCookieValue.contains("&CookieDomain:cookiedomain"));        
+        assertTrue(decodedCookieValue.contains("&CookieDomain:cookiedomain"));
         assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
         assertTrue(decodedCookieValue.contains("|TargetUrl=url"));
         assertTrue(decodedCookieValue.contains("|RequestIP=80.35.35.34"));
@@ -171,7 +200,7 @@ public class KnownUserTest {
 
     @Test
     public void cancelRequestByLocalConfigNullQueueDomainTest() {
-        // Arrange        
+        // Arrange
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
         boolean exceptionWasThrown = false;
@@ -179,10 +208,10 @@ public class KnownUserTest {
         cancelEventConfig.setEventId("eventid");
         cancelEventConfig.setCookieDomain("cookieDomain");
         cancelEventConfig.setVersion(12);
-        
+
         // Act
         try {
-            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", cancelEventConfig, "customerId", null, null, "secretKey");
+            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", cancelEventConfig, "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "QueueDomain from cancelConfig can not be null or empty.".equals(ex.getMessage());
         }
@@ -191,20 +220,20 @@ public class KnownUserTest {
         assertTrue(mock.validateCancelRequestCalls.isEmpty());
         assertTrue(exceptionWasThrown);
     }
-    
+
     @Test
     public void cancelRequestByLocalConfigEventIdNullTest() {
-        // Arrange        
+        // Arrange
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
         boolean exceptionWasThrown = false;
         CancelEventConfig cancelEventConfig = new CancelEventConfig();
         cancelEventConfig.setCookieDomain("domain");
         cancelEventConfig.setVersion(12);
-        
+
         // Act
         try {
-            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", cancelEventConfig, "customerId", null, null, "secretKey");
+            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", cancelEventConfig, "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "EventId from cancelConfig can not be null or empty.".equals(ex.getMessage());
         }
@@ -213,36 +242,36 @@ public class KnownUserTest {
         assertTrue(mock.validateCancelRequestCalls.isEmpty());
         assertTrue(exceptionWasThrown);
     }
-    
+
     @Test
     public void cancelRequestByLocalConfigCancelEventConfigNullTest() {
         // Arrange        
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
         boolean exceptionWasThrown = false;
-        
+
         // Act
         try {
-            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", null, "customerId", null, null, "secretKey");
+            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", null, "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "cancelConfig can not be null.".equals(ex.getMessage());
         }
 
         // Assert
         assertTrue(mock.validateCancelRequestCalls.isEmpty());
-        assertTrue(exceptionWasThrown);    
+        assertTrue(exceptionWasThrown);
     }
 
     @Test
     public void cancelRequestByLocalConfigCustomerIdNullTest() {
-        // Arrange        
+        // Arrange    
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
         boolean exceptionWasThrown = false;
-        
+
         // Act
         try {
-            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", new CancelEventConfig(), null, null, null, "secretKey");
+            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", new CancelEventConfig(), null, new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "customerId can not be null or empty.".equals(ex.getMessage());
         }
@@ -251,17 +280,17 @@ public class KnownUserTest {
         assertTrue(mock.validateCancelRequestCalls.isEmpty());
         assertTrue(exceptionWasThrown);
     }
-    
+
     @Test
     public void cancelRequestByLocalConfigSecretKeyNullTest() {
-        // Arrange        
+        // Arrange     
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
         boolean exceptionWasThrown = false;
-        
+
         // Act
         try {
-            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", new CancelEventConfig(), "customerId", null, null, null);
+            KnownUser.cancelRequestByLocalConfig("targetUrl", "queueitToken", new CancelEventConfig(), "customerId", new HttpServletRequestMock(), null, null);
         } catch (Exception ex) {
             exceptionWasThrown = "secretKey can not be null or empty.".equals(ex.getMessage());
         }
@@ -270,26 +299,26 @@ public class KnownUserTest {
         assertTrue(mock.validateCancelRequestCalls.isEmpty());
         assertTrue(exceptionWasThrown);
     }
-    
+
     @Test
     public void CancelRequestByLocalConfigTargetUrlNullTest() {
-        // Arrange        
+        // Arrange     
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
         boolean exceptionWasThrown = false;
-        
+
         // Act
         try {
-            KnownUser.cancelRequestByLocalConfig(null, "queueitToken", new CancelEventConfig(), "customerId", null, null, "secretKey");
+            KnownUser.cancelRequestByLocalConfig(null, "queueitToken", new CancelEventConfig(), "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "targetUrl can not be null or empty.".equals(ex.getMessage());
         }
 
         // Assert
         assertTrue(mock.validateCancelRequestCalls.isEmpty());
-        assertTrue(exceptionWasThrown);    
+        assertTrue(exceptionWasThrown);
     }
-    
+
     @Test
     public void extendQueueCookieNullEventIdTest() {
         // Arrange
@@ -372,7 +401,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", null, null, null, null, "secretKey");
+            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", null, null, new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "customerId can not be null or empty.".equals(ex.getMessage());
         }
@@ -391,7 +420,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", null, "customerId", null, null, null);
+            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", null, "customerId", new HttpServletRequestMock(), null, null);
         } catch (Exception ex) {
             exceptionWasThrown = "secretKey can not be null or empty.".equals(ex.getMessage());
         }
@@ -410,7 +439,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", null, "customerId", null, null, "secretKey");
+            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", null, "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "eventConfig can not be null.".equals(ex.getMessage());
         }
@@ -439,7 +468,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", null, null, "secretKey");
+            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "EventId from queueConfig can not be null or empty.".equals(ex.getMessage());
         }
@@ -468,7 +497,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", null, null, "secretKey");
+            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "QueueDomain from queueConfig can not be null or empty.".equals(ex.getMessage());
         }
@@ -497,7 +526,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", null, null, "secretKey");
+            KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", new HttpServletRequestMock(), null, "secretKey");
         } catch (Exception ex) {
             exceptionWasThrown = "cookieValidityMinute from queueConfig should be greater than 0.".equals(ex.getMessage());
         }
@@ -524,7 +553,7 @@ public class KnownUserTest {
         eventConfig.setVersion(12);
 
         // Act
-        KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", null, null, "secretKey");
+        RequestValidationResult result = KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", new HttpServletRequestMock(), null, "secretKey");
 
         // Assert
         assertTrue("targetUrl".equals(mock.validateQueueRequestCalls.get(0).get(0)));
@@ -532,6 +561,38 @@ public class KnownUserTest {
         assertTrue("cookieDomain:layoutName:culture:eventId:queueDomain:true:10:12".equals(mock.validateQueueRequestCalls.get(0).get(2)));
         assertTrue("customerId".equals(mock.validateQueueRequestCalls.get(0).get(3)));
         assertTrue("secretKey".equals(mock.validateQueueRequestCalls.get(0).get(4)));
+        assertFalse(result.isAjaxResult);
+    }
+
+    @Test
+    public void resolveQueueRequestByLocalConfigAjaxCallTest() throws Exception {
+        // Arrange
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.Headers.put("x-queueit-ajaxpageurl", "http%3A%2F%2Furl");
+
+        UserInQueueServiceMock mock = new UserInQueueServiceMock();
+        KnownUser.setUserInQueueService(mock);
+
+        QueueEventConfig eventConfig = new QueueEventConfig();
+        eventConfig.setCookieDomain("cookieDomain");
+        eventConfig.setLayoutName("layoutName");
+        eventConfig.setCulture("culture");
+        eventConfig.setEventId("eventId");
+        eventConfig.setQueueDomain("queueDomain");
+        eventConfig.setExtendCookieValidity(true);
+        eventConfig.setCookieValidityMinute(10);
+        eventConfig.setVersion(12);
+
+        // Act
+        RequestValidationResult result = KnownUser.resolveQueueRequestByLocalConfig("targetUrl", "queueitToken", eventConfig, "customerId", requestMock, null, "secretKey");
+
+        // Assert
+        assertTrue("http://url".equals(mock.validateQueueRequestCalls.get(0).get(0)));
+        assertTrue("queueitToken".equals(mock.validateQueueRequestCalls.get(0).get(1)));
+        assertTrue("cookieDomain:layoutName:culture:eventId:queueDomain:true:10:12".equals(mock.validateQueueRequestCalls.get(0).get(2)));
+        assertTrue("customerId".equals(mock.validateQueueRequestCalls.get(0).get(3)));
+        assertTrue("secretKey".equals(mock.validateQueueRequestCalls.get(0).get(4)));
+        assertTrue(result.isAjaxResult);
     }
 
     @Test
@@ -549,7 +610,7 @@ public class KnownUserTest {
         queueConfig.setExtendCookieValidity(true);
         queueConfig.setCookieValidityMinute(10);
         queueConfig.setVersion(12);
-        
+
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.RequestURL = "requestUrl";
         requestMock.RemoteAddr = "80.35.35.34";
@@ -558,9 +619,9 @@ public class KnownUserTest {
         requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
         requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
         requestMock.Headers.put("x-forwarded-proto", "https");
-        
+
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
-        
+
         // Act
         String secretKey = "secretkey";
         String queueittoken = QueueITTokenGenerator.generateToken("eventId", secretKey);
@@ -589,7 +650,7 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
         assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));
     }
-    
+
     @Test
     public void validateRequestByIntegrationConfigEmptyCurrentUrlTest() {
         // Arrange        
@@ -629,7 +690,7 @@ public class KnownUserTest {
     }
 
     @Test
-    public void validateRequestByIntegrationConfigTest() throws Exception {
+    public void validateRequestByIntegrationConfigQueueActionTest() throws Exception {
         // Arrange
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
@@ -641,7 +702,7 @@ public class KnownUserTest {
         triggerPart1.ValidatorType = "UrlValidator";
         triggerPart1.IsNegative = false;
         triggerPart1.IsIgnoreCase = true;
-        
+
         TriggerPart triggerPart2 = new TriggerPart();
         triggerPart2.Operator = "Contains";
         triggerPart2.ValueToCompare = "googlebot";
@@ -651,7 +712,7 @@ public class KnownUserTest {
 
         TriggerModel trigger = new TriggerModel();
         trigger.LogicalOperator = "And";
-        trigger.TriggerParts = new TriggerPart[]{triggerPart1,triggerPart2};
+        trigger.TriggerParts = new TriggerPart[]{triggerPart1, triggerPart2};
 
         IntegrationConfigModel config = new IntegrationConfigModel();
         config.Name = "event1action";
@@ -672,8 +733,9 @@ public class KnownUserTest {
         customerIntegration.Version = 3;
         HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
         httpContextMock.UserAgent = "googlebot";
+
         // Act
-        KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", httpContextMock, null, "secretKey");
+        RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", httpContextMock, null, "secretKey");
 
         // Assert
         assertTrue(mock.validateQueueRequestCalls.size() == 1);
@@ -682,10 +744,11 @@ public class KnownUserTest {
         assertTrue(".test.com:Christmas Layout by Queue-it:da-DK:event1:knownusertest.queue-it.net:true:20:3".equals(mock.validateQueueRequestCalls.get(0).get(2)));
         assertTrue("customerId".equals(mock.validateQueueRequestCalls.get(0).get(3)));
         assertTrue("secretKey".equals(mock.validateQueueRequestCalls.get(0).get(4)));
+        assertFalse(result.isAjaxResult);
     }
 
     @Test
-    public void validateRequestByIntegrationConfigDebugCookieLoggingTest() throws Exception {
+    public void validateRequestByIntegrationConfigQueueActionAjaxCallTest() throws Exception {
         // Arrange
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
@@ -697,7 +760,7 @@ public class KnownUserTest {
         triggerPart1.ValidatorType = "UrlValidator";
         triggerPart1.IsNegative = false;
         triggerPart1.IsIgnoreCase = true;
-        
+
         TriggerPart triggerPart2 = new TriggerPart();
         triggerPart2.Operator = "Contains";
         triggerPart2.ValueToCompare = "googlebot";
@@ -707,7 +770,7 @@ public class KnownUserTest {
 
         TriggerModel trigger = new TriggerModel();
         trigger.LogicalOperator = "And";
-        trigger.TriggerParts = new TriggerPart[]{triggerPart1,triggerPart2};
+        trigger.TriggerParts = new TriggerPart[]{triggerPart1, triggerPart2};
 
         IntegrationConfigModel config = new IntegrationConfigModel();
         config.Name = "event1action";
@@ -726,17 +789,77 @@ public class KnownUserTest {
         CustomerIntegration customerIntegration = new CustomerIntegration();
         customerIntegration.Integrations = new IntegrationConfigModel[]{config};
         customerIntegration.Version = 3;
-        
+
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.UserAgent = "googlebot";
+        requestMock.Headers.put("x-queueit-ajaxpageurl", "http%3A%2F%2Furl");
+
+        // Act
+        RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", requestMock, null, "secretKey");
+
+        // Assert
+        assertTrue(mock.validateQueueRequestCalls.size() == 1);
+        assertTrue("http://url".equals(mock.validateQueueRequestCalls.get(0).get(0)));
+        assertTrue("queueitToken".equals(mock.validateQueueRequestCalls.get(0).get(1)));
+        assertTrue(".test.com:Christmas Layout by Queue-it:da-DK:event1:knownusertest.queue-it.net:true:20:3".equals(mock.validateQueueRequestCalls.get(0).get(2)));
+        assertTrue("customerId".equals(mock.validateQueueRequestCalls.get(0).get(3)));
+        assertTrue("secretKey".equals(mock.validateQueueRequestCalls.get(0).get(4)));
+        assertTrue(result.isAjaxResult);
+    }
+
+    @Test
+    public void validateRequestByIntegrationConfigDebugCookieLoggingTest() throws Exception {
+        // Arrange
+        UserInQueueServiceMock mock = new UserInQueueServiceMock();
+        KnownUser.setUserInQueueService(mock);
+
+        TriggerPart triggerPart1 = new TriggerPart();
+        triggerPart1.Operator = "Contains";
+        triggerPart1.ValueToCompare = "event1";
+        triggerPart1.UrlPart = "PageUrl";
+        triggerPart1.ValidatorType = "UrlValidator";
+        triggerPart1.IsNegative = false;
+        triggerPart1.IsIgnoreCase = true;
+
+        TriggerPart triggerPart2 = new TriggerPart();
+        triggerPart2.Operator = "Contains";
+        triggerPart2.ValueToCompare = "googlebot";
+        triggerPart2.ValidatorType = "UserAgentValidator";
+        triggerPart2.IsNegative = false;
+        triggerPart2.IsIgnoreCase = false;
+
+        TriggerModel trigger = new TriggerModel();
+        trigger.LogicalOperator = "And";
+        trigger.TriggerParts = new TriggerPart[]{triggerPart1, triggerPart2};
+
+        IntegrationConfigModel config = new IntegrationConfigModel();
+        config.Name = "event1action";
+        config.EventId = "event1";
+        config.CookieDomain = ".test.com";
+        config.LayoutName = "Christmas Layout by Queue-it";
+        config.Culture = "da-DK";
+        config.ExtendCookieValidity = true;
+        config.CookieValidityMinute = 20;
+        config.Triggers = new TriggerModel[]{trigger};
+        config.QueueDomain = "knownusertest.queue-it.net";
+        config.RedirectLogic = "AllowTParameter";
+        config.ForcedTargetUrl = "";
+        config.ActionType = ActionType.QUEUE_ACTION;
+
+        CustomerIntegration customerIntegration = new CustomerIntegration();
+        customerIntegration.Integrations = new IntegrationConfigModel[]{config};
+        customerIntegration.Version = 3;
+
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.UserAgent = "googlebot";
         requestMock.RequestURL = "requestUrl";
-        
-        HttpServletResponseMock responseMock = new HttpServletResponseMock();        
-        
+
+        HttpServletResponseMock responseMock = new HttpServletResponseMock();
+
         // Act
         String secretKey = "secretkey";
         String queueittoken = QueueITTokenGenerator.generateToken("eventId", secretKey);
-        
+
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
 
         // Assert
@@ -758,7 +881,7 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("|TargetUrl=http://test.com?event1=true"));
         assertTrue(decodedCookieValue.contains("|MatchedConfig=event1action"));
     }
-    
+
     @Test
     public void validateRequestByIntegrationConfigNotMatchTest() throws Exception {
         // Arrange
@@ -795,18 +918,18 @@ public class KnownUserTest {
         requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
         requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
         requestMock.Headers.put("x-forwarded-proto", "https");
-        
+
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
-        
+
         // Act
         String secretKey = "secretkey";
         String queueittoken = QueueITTokenGenerator.generateToken("eventId", secretKey);
-        
+
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
 
         // Assert
         assertTrue(responseMock.addedCookies.size() == 1);
-        assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));        
+        assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
         String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
         assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
         assertTrue(decodedCookieValue.contains("|PureUrl=http://test.com?event1=true"));
@@ -817,9 +940,9 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
         assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
         assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));        
+        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));
     }
-    
+
     @Test
     public void validateRequestByIntegrationConfigForcedTargeturlTest() throws Exception {
         // Arrange
@@ -950,7 +1073,7 @@ public class KnownUserTest {
         assertTrue(mock.validateQueueRequestCalls.size() == 1);
         assertTrue("".equals(mock.validateQueueRequestCalls.get(0).get(0)));
     }
-    
+
     @Test
     public void validateRequestByIntegrationConfigIgnoreAction() throws Exception {
         // Arrange
@@ -974,7 +1097,7 @@ public class KnownUserTest {
         config.EventId = "event1";
         config.CookieDomain = "cookiedomain";
         config.Triggers = new TriggerModel[]{trigger};
-        config.QueueDomain = "queuedomain";        
+        config.QueueDomain = "queuedomain";
         config.ActionType = ActionType.IGNORE_ACTION;
 
         CustomerIntegration customerIntegration = new CustomerIntegration();
@@ -982,12 +1105,54 @@ public class KnownUserTest {
         customerIntegration.Version = 3;
 
         // Act
-        KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
+        RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
 
         // Assert
-        assertTrue(mock.getIgnoreActionResultCalls.size() == 1);        
+        assertTrue(mock.getIgnoreActionResultCalls.size() == 1);
+        assertFalse(result.isAjaxResult);
     }
-    
+
+    @Test
+    public void validateRequestByIntegrationConfigAjaxCallIgnoreAction() throws Exception {
+        // Arrange
+        TriggerPart triggerPart = new TriggerPart();
+        triggerPart.Operator = "Contains";
+        triggerPart.ValueToCompare = "event1";
+        triggerPart.UrlPart = "PageUrl";
+        triggerPart.ValidatorType = "UrlValidator";
+        triggerPart.IsNegative = false;
+        triggerPart.IsIgnoreCase = true;
+
+        TriggerModel trigger = new TriggerModel();
+        trigger.LogicalOperator = "And";
+        trigger.TriggerParts = new TriggerPart[]{triggerPart};
+
+        IntegrationConfigModel config = new IntegrationConfigModel();
+        config.Name = "event1action";
+        config.EventId = "event1";
+        config.CookieDomain = "cookiedomain";
+        config.Triggers = new TriggerModel[]{trigger};
+        config.QueueDomain = "queuedomain";
+        config.ActionType = ActionType.IGNORE_ACTION;
+
+        CustomerIntegration customerIntegration = new CustomerIntegration();
+        customerIntegration.Integrations = new IntegrationConfigModel[]{config};
+        customerIntegration.Version = 3;
+
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.Headers.put("x-queueit-ajaxpageurl", "url");
+
+        UserInQueueServiceMock mock = new UserInQueueServiceMock();
+        KnownUser.setUserInQueueService(mock);
+
+        // Act
+        RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", requestMock, null, "secretKey");
+
+        // Assert
+        assertTrue(mock.getIgnoreActionResultCalls.size() == 1);
+        assertTrue(result.isAjaxResult);
+    }
+
     @Test
     public void validateRequestByIntegrationConfigCancelAction() throws Exception {
         // Arrange
@@ -1011,7 +1176,7 @@ public class KnownUserTest {
         config.EventId = "event1";
         config.CookieDomain = "cookiedomain";
         config.Triggers = new TriggerModel[]{trigger};
-        config.QueueDomain = "queuedomain";        
+        config.QueueDomain = "queuedomain";
         config.ActionType = ActionType.CANCEL_ACTION;
 
         CustomerIntegration customerIntegration = new CustomerIntegration();
@@ -1019,27 +1184,73 @@ public class KnownUserTest {
         customerIntegration.Version = 3;
 
         // Act
-        KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
+        RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
 
         // Assert
         assertTrue("http://test.com?event1=true".equals(mock.validateCancelRequestCalls.get(0).get(0)));
         assertTrue("cookiedomain:event1:queuedomain:3".equals(mock.validateCancelRequestCalls.get(0).get(1)));
         assertTrue("customerId".equals(mock.validateCancelRequestCalls.get(0).get(2)));
         assertTrue("secretKey".equals(mock.validateCancelRequestCalls.get(0).get(3)));
+        assertFalse(result.isAjaxResult);
     }
-    
+
+    @Test
+    public void validateRequestByIntegrationConfigAjaxCallCancelAction() throws Exception {
+        // Arrange
+        TriggerPart triggerPart = new TriggerPart();
+        triggerPart.Operator = "Contains";
+        triggerPart.ValueToCompare = "event1";
+        triggerPart.UrlPart = "PageUrl";
+        triggerPart.ValidatorType = "UrlValidator";
+        triggerPart.IsNegative = false;
+        triggerPart.IsIgnoreCase = true;
+
+        TriggerModel trigger = new TriggerModel();
+        trigger.LogicalOperator = "And";
+        trigger.TriggerParts = new TriggerPart[]{triggerPart};
+
+        IntegrationConfigModel config = new IntegrationConfigModel();
+        config.Name = "event1action";
+        config.EventId = "event1";
+        config.CookieDomain = "cookiedomain";
+        config.Triggers = new TriggerModel[]{trigger};
+        config.QueueDomain = "queuedomain";
+        config.ActionType = ActionType.CANCEL_ACTION;
+
+        CustomerIntegration customerIntegration = new CustomerIntegration();
+        customerIntegration.Integrations = new IntegrationConfigModel[]{config};
+        customerIntegration.Version = 3;
+
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.Headers.put("x-queueit-ajaxpageurl", "http%3A%2F%2Furl");
+
+        UserInQueueServiceMock mock = new UserInQueueServiceMock();
+        KnownUser.setUserInQueueService(mock);
+
+        // Act
+        RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration, "customerId", requestMock, null, "secretKey");
+
+        // Assert
+        assertTrue("http://url".equals(mock.validateCancelRequestCalls.get(0).get(0)));
+        assertTrue("cookiedomain:event1:queuedomain:3".equals(mock.validateCancelRequestCalls.get(0).get(1)));
+        assertTrue("customerId".equals(mock.validateCancelRequestCalls.get(0).get(2)));
+        assertTrue("secretKey".equals(mock.validateCancelRequestCalls.get(0).get(3)));
+        assertTrue(result.isAjaxResult);
+    }
+
     class HttpServletRequestMock implements HttpServletRequest {
+
         public Cookie[] CookiesValue;
         public String UserAgent;
         public String RequestURL;
         public String QueryString;
         public String RemoteAddr;
         public HashMap Headers;
-        
+
         public HttpServletRequestMock() {
             this.Headers = new HashMap();
         }
-        
+
         @Override
         public String getAuthType() {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -1057,14 +1268,16 @@ public class KnownUserTest {
 
         @Override
         public String getHeader(String key) {
-            if("User-Agent".equals(key))
+            if ("User-Agent".equals(key)) {
                 return this.UserAgent;
-            
+            }
+
             String value = (String) this.Headers.get(key);
-            
-            if(value == null)
+
+            if (value == null) {
                 value = "";
-            
+            }
+
             return value;
         }
 
@@ -1393,10 +1606,11 @@ public class KnownUserTest {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }
-    
+
     class HttpServletResponseMock implements HttpServletResponse {
+
         ArrayList<Cookie> addedCookies = new ArrayList<>();
-        
+
         @Override
         public void addCookie(Cookie cookie) {
             addedCookies.add(cookie);
@@ -1582,13 +1796,13 @@ public class KnownUserTest {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }
-    
+
     public static class QueueITTokenGenerator {
 
         public static String generateToken(
-            String eventId,
-            String secretKey) throws Exception {
-            
+                String eventId,
+                String secretKey) throws Exception {
+
             ArrayList<String> paramList = new ArrayList<>();
             paramList.add(QueueParameterHelper.EventIdKey + QueueParameterHelper.KeyValueSeparatorChar + eventId);
             paramList.add(QueueParameterHelper.RedirectTypeKey + QueueParameterHelper.KeyValueSeparatorChar + "debug");

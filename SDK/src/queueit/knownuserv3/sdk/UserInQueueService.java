@@ -31,11 +31,10 @@ interface IUserInQueueService {
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "3.5.0";
+    public static final String SDK_VERSION = "3.5.1";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
-    public UserInQueueService(
-            IUserInQueueStateRepository queueStateRepository) {
+    public UserInQueueService(IUserInQueueStateRepository queueStateRepository) {
         this._userInQueueStateRepository = queueStateRepository;
     }
 

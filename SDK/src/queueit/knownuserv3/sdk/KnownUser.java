@@ -1,4 +1,5 @@
 package queueit.knownuserv3.sdk;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -11,9 +12,10 @@ import javax.servlet.http.HttpServletResponse;
 import queueit.knownuserv3.sdk.integrationconfig.*;
 
 public class KnownUser {
-    
+
     public static final String QueueITTokenKey = "queueittoken";
     public static final String QueueITDebugKey = "queueitdebug";
+    public static final String QueueITAjaxHeaderKey = "x-queueit-ajaxpageurl";
     private static IUserInQueueService _userInQueueService;
 
     private static IUserInQueueService getUserInQueueService(HttpServletRequest request, HttpServletResponse response) {
@@ -37,7 +39,7 @@ public class KnownUser {
             HttpServletResponse response, String secretKey) throws Exception {
 
         Map<String, String> debugEntries = new HashMap<>();
-        
+
         try {
             boolean isDebug = getIsDebug(queueitToken, secretKey);
             if (isDebug) {
@@ -55,7 +57,7 @@ public class KnownUser {
                 throw new KnowUserException("customerIntegrationInfo can not be null.");
             }
 
-            Cookie[] cookies = request != null ? request.getCookies() : new Cookie[0];        
+            Cookie[] cookies = request != null ? request.getCookies() : new Cookie[0];
 
             IntegrationEvaluator configEvaluater = new IntegrationEvaluator();
 
@@ -64,7 +66,7 @@ public class KnownUser {
 
             if (isDebug) {
                 String matchedConfigName = (matchedConfig != null) ? matchedConfig.Name : "NULL";
-                debugEntries.put("MatchedConfig", matchedConfigName);                
+                debugEntries.put("MatchedConfig", matchedConfigName);
             }
 
             if (matchedConfig == null) {
@@ -72,18 +74,15 @@ public class KnownUser {
             }
 
             // unspecified or 'Queue' specified
-            if(Utils.isNullOrWhiteSpace(matchedConfig.ActionType) || ActionType.QUEUE_ACTION.equals(matchedConfig.ActionType)) {
+            if (Utils.isNullOrWhiteSpace(matchedConfig.ActionType) || ActionType.QUEUE_ACTION.equals(matchedConfig.ActionType)) {
                 return handleQueueAction(matchedConfig, currentUrlWithoutQueueITToken, customerIntegrationInfo, queueitToken, customerId, request, response, secretKey, debugEntries);
-            }
-            else if (ActionType.CANCEL_ACTION.equals(matchedConfig.ActionType)){
+            } else if (ActionType.CANCEL_ACTION.equals(matchedConfig.ActionType)) {
                 return handleCancelAction(matchedConfig, customerIntegrationInfo, currentUrlWithoutQueueITToken, queueitToken, customerId, request, response, secretKey, debugEntries);
-            }            
-            // for all unknown types default to 'Ignore'
+            } // for all unknown types default to 'Ignore'
             else {
                 return handleIgnoreAction(request, response);
             }
-        }
-        finally {
+        } finally {
             setDebugCookie(debugEntries, request, response);
         }
     }
@@ -92,24 +91,23 @@ public class KnownUser {
             String targetUrl, String queueitToken, CancelEventConfig cancelConfig,
             String customerId, HttpServletRequest request,
             HttpServletResponse response, String secretKey) throws Exception {
-        
+
         Map<String, String> debugEntries = new HashMap<>();
-        
+
         try {
-            return cancelRequestByLocalConfig(
-                    targetUrl, queueitToken, cancelConfig, customerId, request, response, secretKey, debugEntries);
-        }
-        finally {
+            targetUrl = generateTargetUrl(targetUrl, request);
+            return cancelRequestByLocalConfig(targetUrl, queueitToken, cancelConfig, customerId, request, response, secretKey, debugEntries);
+        } finally {
             setDebugCookie(debugEntries, request, response);
         }
     }
-    
+
     private static RequestValidationResult cancelRequestByLocalConfig(
             String targetUrl, String queueitToken, CancelEventConfig cancelConfig,
             String customerId, HttpServletRequest request,
-            HttpServletResponse response, String secretKey, 
+            HttpServletResponse response, String secretKey,
             Map<String, String> debugEntries) throws Exception {
-        
+
         boolean isDebug = getIsDebug(queueitToken, secretKey);
         if (isDebug) {
             debugEntries.put("TargetUrl", targetUrl);
@@ -118,7 +116,7 @@ public class KnownUser {
             debugEntries.put("OriginalUrl", getOriginalUrl(request));
             logMoreRequestDetails(debugEntries, request);
         }
-        
+
         if (Utils.isNullOrWhiteSpace(targetUrl)) {
             throw new Exception("targetUrl can not be null or empty.");
         }
@@ -137,33 +135,35 @@ public class KnownUser {
         if (Utils.isNullOrWhiteSpace(cancelConfig.getQueueDomain())) {
             throw new Exception("QueueDomain from cancelConfig can not be null or empty.");
         }
-        
+
         IUserInQueueService userInQueueService = getUserInQueueService(request, response);
-        return userInQueueService.validateCancelRequest(targetUrl, cancelConfig, customerId, secretKey);
+        RequestValidationResult result = userInQueueService.validateCancelRequest(targetUrl, cancelConfig, customerId, secretKey);
+        result.isAjaxResult = isQueueAjaxCall(request);
+
+        return result;
     }
-    
+
     public static RequestValidationResult resolveQueueRequestByLocalConfig(
             String targetUrl, String queueitToken, QueueEventConfig queueConfig,
             String customerId, HttpServletRequest request,
             HttpServletResponse response, String secretKey) throws Exception {
-        
+
         Map<String, String> debugEntries = new HashMap<>();
-        
+
         try {
-            return resolveQueueRequestByLocalConfig(
-                    targetUrl, queueitToken, queueConfig, customerId, request, response, secretKey, debugEntries);
-        }
-        finally {
+            targetUrl = generateTargetUrl(targetUrl, request);
+            return resolveQueueRequestByLocalConfig(targetUrl, queueitToken, queueConfig, customerId, request, response, secretKey, debugEntries);
+        } finally {
             setDebugCookie(debugEntries, request, response);
         }
     }
-    
+
     private static RequestValidationResult resolveQueueRequestByLocalConfig(
             String targetUrl, String queueitToken, QueueEventConfig queueConfig,
             String customerId, HttpServletRequest request,
-            HttpServletResponse response, String secretKey, 
+            HttpServletResponse response, String secretKey,
             Map<String, String> debugEntries) throws Exception {
-        
+
         boolean isDebug = getIsDebug(queueitToken, secretKey);
         if (isDebug) {
             debugEntries.put("TargetUrl", targetUrl);
@@ -172,7 +172,7 @@ public class KnownUser {
             debugEntries.put("OriginalUrl", getOriginalUrl(request));
             logMoreRequestDetails(debugEntries, request);
         }
-        
+
         if (Utils.isNullOrWhiteSpace(customerId)) {
             throw new Exception("customerId can not be null or empty.");
         }
@@ -196,7 +196,10 @@ public class KnownUser {
         }
 
         IUserInQueueService userInQueueService = getUserInQueueService(request, response);
-        return userInQueueService.validateQueueRequest(targetUrl, queueitToken, queueConfig, customerId, secretKey);
+        RequestValidationResult result = userInQueueService.validateQueueRequest(targetUrl, queueitToken, queueConfig, customerId, secretKey);
+        result.isAjaxResult = isQueueAjaxCall(request);
+
+        return result;
     }
 
     public static void extendQueueCookie(String eventId,
@@ -205,7 +208,7 @@ public class KnownUser {
             HttpServletRequest request,
             HttpServletResponse response,
             String secretKey) throws Exception {
-        
+
         if (Utils.isNullOrWhiteSpace(eventId)) {
             throw new Exception("eventId can not be null or empty.");
         }
@@ -215,26 +218,27 @@ public class KnownUser {
         if (Utils.isNullOrWhiteSpace(secretKey)) {
             throw new Exception("secretKey can not be null or empty.");
         }
-        
+
         IUserInQueueService userInQueueService = getUserInQueueService(request, response);
         userInQueueService.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
     }
-    
+
     private static void setDebugCookie(Map<String, String> debugEntries, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
-        if(debugEntries.isEmpty())
+        if (debugEntries.isEmpty()) {
             return;
-        
+        }
+
         ICookieManager cookieManager = new CookieManager(request, response);
         String cookieValue = "";
         for (Map.Entry<String, String> entry : debugEntries.entrySet()) {
-            cookieValue += (entry.getKey() + "=" + entry.getValue() + "|");            
+            cookieValue += (entry.getKey() + "=" + entry.getValue() + "|");
         }
-        if(!"".equals(cookieValue))
+        if (!"".equals(cookieValue)) {
             cookieValue = cookieValue.substring(0, cookieValue.length() - 1); // remove trailing char
-        
+        }
         cookieManager.setCookie(QueueITDebugKey, cookieValue, null, null);
     }
-    
+
     private static void logMoreRequestDetails(Map<String, String> debugEntries, HttpServletRequest request) {
         debugEntries.put("ServerUtcTime", Instant.now().toString());
         debugEntries.put("RequestIP", request.getRemoteAddr());
@@ -242,11 +246,10 @@ public class KnownUser {
         debugEntries.put("RequestHttpHeader_Forwarded", request.getHeader("forwarded") != null ? request.getHeader("forwarded") : "");
         debugEntries.put("RequestHttpHeader_XForwardedFor", request.getHeader("x-forwarded-for") != null ? request.getHeader("x-forwarded-for") : "");
         debugEntries.put("RequestHttpHeader_XForwardedHost", request.getHeader("x-forwarded-host") != null ? request.getHeader("x-forwarded-host") : "");
-        debugEntries.put("RequestHttpHeader_XForwardedProto", request.getHeader("x-forwarded-proto") != null ? request.getHeader("x-forwarded-proto") : "");        
+        debugEntries.put("RequestHttpHeader_XForwardedProto", request.getHeader("x-forwarded-proto") != null ? request.getHeader("x-forwarded-proto") : "");
     }
-    
-    private static boolean getIsDebug(String queueitToken, String secretKey) throws Exception
-    {
+
+    private static boolean getIsDebug(String queueitToken, String secretKey) throws Exception {
         QueueUrlParams qParams = QueueParameterHelper.extractQueueParams(queueitToken);
         if (qParams != null && qParams.getRedirectType() != null && "debug".equals(qParams.getRedirectType().toLowerCase())) {
             String hash = HashHelper.generateSHA256Hash(secretKey, qParams.getQueueITTokenWithoutHash());
@@ -254,13 +257,13 @@ public class KnownUser {
         }
         return false;
     }
-    
-    private static String getOriginalUrl(HttpServletRequest request){
-        return (request.getQueryString() != null) 
-                ? String.join("", request.getRequestURL(), "?",request.getQueryString()) 
-                : request.getRequestURL().toString();        
+
+    private static String getOriginalUrl(HttpServletRequest request) {
+        return (request.getQueryString() != null)
+                ? String.join("", request.getRequestURL(), "?", request.getQueryString())
+                : request.getRequestURL().toString();
     }
-    
+
     private static RequestValidationResult handleQueueAction(IntegrationConfigModel matchedConfig, String currentUrlWithoutQueueITToken, CustomerIntegration customerIntegrationInfo, String queueitToken, String customerId, HttpServletRequest request, HttpServletResponse response, String secretKey, Map<String, String> debugEntries) throws Exception {
         String targetUrl;
         switch (matchedConfig.RedirectLogic) {
@@ -272,10 +275,10 @@ public class KnownUser {
                 targetUrl = "";
                 break;
             default:
-                targetUrl = currentUrlWithoutQueueITToken;
+                targetUrl = generateTargetUrl(currentUrlWithoutQueueITToken, request);
                 break;
         }
-        
+
         QueueEventConfig queueConfig = new QueueEventConfig();
         queueConfig.setQueueDomain(matchedConfig.QueueDomain);
         queueConfig.setCulture(matchedConfig.Culture);
@@ -285,9 +288,8 @@ public class KnownUser {
         queueConfig.setCookieValidityMinute(matchedConfig.CookieValidityMinute);
         queueConfig.setCookieDomain(matchedConfig.CookieDomain);
         queueConfig.setVersion(customerIntegrationInfo.Version);
-        
-        return resolveQueueRequestByLocalConfig(
-                targetUrl, queueitToken, queueConfig, customerId, request, response, secretKey, debugEntries);
+
+        return resolveQueueRequestByLocalConfig(targetUrl, queueitToken, queueConfig, customerId, request, response, secretKey, debugEntries);
     }
 
     private static RequestValidationResult handleCancelAction(IntegrationConfigModel matchedConfig, CustomerIntegration customerIntegrationInfo, String currentUrlWithoutQueueITToken, String queueitToken, String customerId, HttpServletRequest request, HttpServletResponse response, String secretKey, Map<String, String> debugEntries) throws Exception {
@@ -296,20 +298,37 @@ public class KnownUser {
         cancelConfig.setEventId(matchedConfig.EventId);
         cancelConfig.setCookieDomain(matchedConfig.CookieDomain);
         cancelConfig.setVersion(customerIntegrationInfo.Version);
-        
-        return cancelRequestByLocalConfig(
-                currentUrlWithoutQueueITToken, queueitToken, cancelConfig, customerId, request, response, secretKey, debugEntries);
+
+        String targetUrl = generateTargetUrl(currentUrlWithoutQueueITToken, request);
+        return cancelRequestByLocalConfig(targetUrl, queueitToken, cancelConfig, customerId, request, response, secretKey, debugEntries);
     }
 
     private static RequestValidationResult handleIgnoreAction(HttpServletRequest request, HttpServletResponse response) {
         IUserInQueueService userInQueueService = getUserInQueueService(request, response);
-        return userInQueueService.getIgnoreActionResult();
+        RequestValidationResult result = userInQueueService.getIgnoreActionResult();
+        result.isAjaxResult = isQueueAjaxCall(request);
+        return result;
+    }
+
+    private static String generateTargetUrl(String originalTargetUrl, HttpServletRequest request) {
+        try {
+            return !isQueueAjaxCall(request)
+                    ? originalTargetUrl
+                    : URLDecoder.decode(request.getHeader(QueueITAjaxHeaderKey), "UTF-8");
+        } catch (UnsupportedEncodingException e) { 
+        } 
+        return "";
+    }
+
+    private static boolean isQueueAjaxCall(HttpServletRequest request) {
+        return !Utils.isNullOrWhiteSpace(request.getHeader(QueueITAjaxHeaderKey));
     }
 }
 
 interface ICookieManager {
 
     void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain);
+
     String getCookie(String cookieName);
 }
 
@@ -318,26 +337,28 @@ class CookieManager implements ICookieManager {
     HttpServletRequest request;
     HttpServletResponse response;
 
-    public CookieManager(HttpServletRequest request,
-            HttpServletResponse response) {
+    public CookieManager(HttpServletRequest request, HttpServletResponse response) {
         this.request = request;
         this.response = response;
     }
 
     @Override
     public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
-        if(response == null)
+        if (response == null) {
             return;
-        
+        }
+
         Cookie cookie = new Cookie(cookieName, cookieValue);
         if (cookieValue == null) {
             cookieValue = "";
         }
         try {
             cookie.setValue(URLEncoder.encode(cookieValue, "UTF-8"));
-        } catch (UnsupportedEncodingException ex) {}
-        if(expiration != null)
+        } catch (UnsupportedEncodingException ex) {
+        }
+        if (expiration != null) {
             cookie.setMaxAge(expiration);
+        }
         cookie.setPath("/");
         if (!Utils.isNullOrWhiteSpace(cookieDomain)) {
             cookie.setDomain(cookieDomain);
@@ -348,9 +369,10 @@ class CookieManager implements ICookieManager {
 
     @Override
     public String getCookie(String cookieName) {
-        if(request == null)
+        if (request == null) {
             return null;
-        
+        }
+
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;
@@ -360,7 +382,8 @@ class CookieManager implements ICookieManager {
             if (cookie.getName().equals(cookieName)) {
                 try {
                     return URLDecoder.decode(cookie.getValue(), "UTF-8");
-                } catch (UnsupportedEncodingException ex) { }
+                } catch (UnsupportedEncodingException ex) {
+                }
             }
         }
         return null;

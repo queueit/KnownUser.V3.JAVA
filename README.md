@@ -155,3 +155,71 @@ The following is an example of how to specify the configuration in code:
         }
     }
 ```
+
+## Protecting ajax calls on static pages
+If you have some static html pages (might be behind cache servers) and you have some ajax calls from those pages needed to be protected by KnownUser library you need to follow these steps:
+
+1. You are using v.3.5.1 (or later) of the KnownUser library.
+2. Make sure KnownUser code will not run on static pages (by ignoring those URLs in your integration configuration).
+3. Protect static pages by including this Javascript code:
+
+<script
+        type="text/javascript"
+        src="//static.queue-it.net/script/knownuserv3.js">
+</script>
+
+4. Use the following method to protect all dynamic calls (including dynamic pages and ajax calls).
+ 
+```
+     private void doValidation(HttpServletRequest request, HttpServletResponse response) {
+        try {
+
+            //Adding no cache headers to prevent browsers to cache requests
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+            response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+            response.setDateHeader("Expires", 0); // Proxies.
+            //end
+
+            String customerId = "Your Queue-it customer ID";
+            String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
+
+            String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
+            String pureUrl = getPureUrl(request);
+
+            String pathToLocalFile = request.getServletContext().getRealPath("/") + "integrationconfiguration.json";
+            CustomerIntegration integrationConfig = IntegrationConfigProvider.getIntegrationConfigFromFile(customerId, pathToLocalFile);
+            //CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId);
+
+            //Verify if the user has been through the queue
+            RequestValidationResult validationResult = KnownUser.validateRequestByIntegrationConfig(
+                    pureUrl, queueitToken, integrationConfig, customerId, request, response, secretKey);
+
+            if (validationResult.doRedirect()) {
+                if (validationResult.isAjaxResult) {
+                    //In case of ajax call send the user to the queue by sending a custom queue-it header and redirecting user to queue from javascript
+                    response.setHeader(validationResult.getAjaxQueueRedirectHeaderKey(), validationResult.getAjaxRedirectUrl());
+                } else {
+                    //Send the user to the queue - either becuase hash was missing or becuase is was invalid
+                    response.sendRedirect(validationResult.getRedirectUrl());
+                }
+                response.getOutputStream().flush();
+                response.getOutputStream().close();
+            } else {
+                String queryString = request.getQueryString();
+                //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey)) {
+                    response.sendRedirect(pureUrl);
+                    response.getOutputStream().flush();
+                    response.getOutputStream().close();
+                } else {
+                    RequestDispatcher rd = request.getRequestDispatcher("resource.xhtml");
+                    rd.forward(request, response);
+                }
+            }
+        } catch (Exception ex) {
+            //There was an error validationg the request
+            //Use your own logging framework to log the Exception
+            //This was a configuration exception, so we let the user continue            
+        }
+    }
+```

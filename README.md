@@ -186,9 +186,9 @@ If you have some static html pages (might be behind cache servers) and you have 
             String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
 
-            String pathToLocalFile = request.getServletContext().getRealPath("/") + "integrationconfiguration.json";
-            CustomerIntegration integrationConfig = IntegrationConfigProvider.getIntegrationConfigFromFile(customerId, pathToLocalFile);
-            //CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId);
+
+           
+            CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId);
 
             //Verify if the user has been through the queue
             RequestValidationResult validationResult = KnownUser.validateRequestByIntegrationConfig(

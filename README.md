@@ -46,7 +46,7 @@ If the timestamp or hash is invalid, the user is send back to the queue.
 
 
 ## Implementation
-The KnownUser validation must *only* be done on *page requests*. 
+The KnownUser validation must be done on all requests except requests for static resources like images, css files and .... So, if you add the KnownUser validation logic to a central place, then be sure that the Triggers only fire on page requests (including ajax requests) and not on e.g. image. 
 
 This example is using the *[IntegrationConfigProvider](https://github.com/queueit/KnownUser.V3.JAVA/blob/master/Documentation/IntegrationConfigProvider.java)* to download the queue configuration. 
 

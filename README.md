@@ -174,11 +174,7 @@ If you have some static html pages (might be behind cache servers) and you have 
      private void doValidation(HttpServletRequest request, HttpServletResponse response) {
         try {
 
-            //Adding no cache headers to prevent browsers to cache requests
-            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-            response.setHeader("Pragma", "no-cache"); // HTTP 1.0
-            response.setDateHeader("Expires", 0); // Proxies.
-            //end
+ 
 
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
@@ -195,6 +191,11 @@ If you have some static html pages (might be behind cache servers) and you have 
                     pureUrl, queueitToken, integrationConfig, customerId, request, response, secretKey);
 
             if (validationResult.doRedirect()) {
+                //Adding no cache headers to prevent browsers to cache requests
+                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+                response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+                response.setDateHeader("Expires", 0); // Proxies.
+                //end
                 if (validationResult.isAjaxResult) {
                     //In case of ajax call send the user to the queue by sending a custom queue-it header and redirecting user to queue from javascript
                     response.setHeader(validationResult.getAjaxQueueRedirectHeaderKey(), validationResult.getAjaxRedirectUrl());

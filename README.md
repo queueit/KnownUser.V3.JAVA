@@ -173,16 +173,11 @@ If you have some static html pages (might be behind cache servers) and you have 
 ```
      private void doValidation(HttpServletRequest request, HttpServletResponse response) {
         try {
-
- 
-
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
             String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
-
-
            
             CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId);
 

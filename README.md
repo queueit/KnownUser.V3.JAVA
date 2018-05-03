@@ -161,13 +161,17 @@ If you have some static html pages (might be behind cache servers) and you have 
 
 1. You are using v.3.5.1 (or later) of the KnownUser library.
 2. Make sure KnownUser code will not run on static pages (by ignoring those URLs in your integration configuration).
-3. Protect static pages by including this Javascript code:
-
+3. Add below JavaScript tags to static pages :
+```
+<script type="text/javascript" src="//static.queue-it.net/script/queueclient.min.js"></script>
 <script
-        type="text/javascript"
-        src="//static.queue-it.net/script/knownuserv3.js">
+ data-queueit-intercept-domain="{YOUR_CURRENT_DOMAIN}"
+   data-queueit-intercept="true"
+  data-queueit-c="{YOUR_CUSTOMER_ID}"
+  type="text/javascript"
+  src="//static.queue-it.net/script/queueconfigloader.min.js">
 </script>
-
+```
 4. Use the following method to protect all dynamic calls (including dynamic pages and ajax calls).
  
 ```
@@ -203,7 +207,8 @@ If you have some static html pages (might be behind cache servers) and you have 
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey)) {
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && 
+				                            validationResult.getActionType() !=null && !validationResult.getActionType().isEmpty()) {
                     response.sendRedirect(pureUrl);
                     response.getOutputStream().flush();
                     response.getOutputStream().close();

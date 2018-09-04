@@ -3,9 +3,12 @@ package queueit.knownuserv3.sdk;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.time.Instant;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,7 +41,7 @@ public class KnownUser {
             String customerId, HttpServletRequest request,
             HttpServletResponse response, String secretKey) throws Exception {
 
-        Map<String, String> debugEntries = new HashMap<>();
+        Map<String, String> debugEntries = new HashMap();
 
         try {
             boolean isDebug = getIsDebug(queueitToken, secretKey);
@@ -92,7 +95,7 @@ public class KnownUser {
             String customerId, HttpServletRequest request,
             HttpServletResponse response, String secretKey) throws Exception {
 
-        Map<String, String> debugEntries = new HashMap<>();
+        Map<String, String> debugEntries = new HashMap();
 
         try {
             targetUrl = generateTargetUrl(targetUrl, request);
@@ -148,7 +151,7 @@ public class KnownUser {
             String customerId, HttpServletRequest request,
             HttpServletResponse response, String secretKey) throws Exception {
 
-        Map<String, String> debugEntries = new HashMap<>();
+        Map<String, String> debugEntries = new HashMap();
 
         try {
             targetUrl = generateTargetUrl(targetUrl, request);
@@ -240,7 +243,12 @@ public class KnownUser {
     }
 
     private static void logMoreRequestDetails(Map<String, String> debugEntries, HttpServletRequest request) {
-        debugEntries.put("ServerUtcTime", Instant.now().toString());
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
+        df.setTimeZone(tz);
+        String nowAsISO = df.format(new Date());
+
+        debugEntries.put("ServerUtcTime", nowAsISO);
         debugEntries.put("RequestIP", request.getRemoteAddr());
         debugEntries.put("RequestHttpHeader_Via", request.getHeader("via") != null ? request.getHeader("via") : "");
         debugEntries.put("RequestHttpHeader_Forwarded", request.getHeader("forwarded") != null ? request.getHeader("forwarded") : "");
@@ -260,23 +268,20 @@ public class KnownUser {
 
     private static String getOriginalUrl(HttpServletRequest request) {
         return (request.getQueryString() != null)
-                ? String.join("", request.getRequestURL(), "?", request.getQueryString())
+                ? request.getRequestURL().toString() + "?" + request.getQueryString()
                 : request.getRequestURL().toString();
     }
 
     private static RequestValidationResult handleQueueAction(IntegrationConfigModel matchedConfig, String currentUrlWithoutQueueITToken, CustomerIntegration customerIntegrationInfo, String queueitToken, String customerId, HttpServletRequest request, HttpServletResponse response, String secretKey, Map<String, String> debugEntries) throws Exception {
         String targetUrl;
-        switch (matchedConfig.RedirectLogic) {
-            case "ForecedTargetUrl": // suuport for typo (fall through)
-            case "ForcedTargetUrl":
-                targetUrl = matchedConfig.ForcedTargetUrl;
-                break;
-            case "EventTargetUrl":
-                targetUrl = "";
-                break;
-            default:
-                targetUrl = generateTargetUrl(currentUrlWithoutQueueITToken, request);
-                break;
+
+        if ("ForecedTargetUrl".equals(matchedConfig.RedirectLogic) || // support for typo
+                "ForcedTargetUrl".equals(matchedConfig.RedirectLogic)) {
+            targetUrl = matchedConfig.ForcedTargetUrl;
+        } else if ("EventTargetUrl".equals(matchedConfig.RedirectLogic)) {
+            targetUrl = "";
+        } else {
+            targetUrl = generateTargetUrl(currentUrlWithoutQueueITToken, request);
         }
 
         QueueEventConfig queueConfig = new QueueEventConfig();
@@ -315,8 +320,8 @@ public class KnownUser {
             return !isQueueAjaxCall(request)
                     ? originalTargetUrl
                     : URLDecoder.decode(request.getHeader(QueueITAjaxHeaderKey), "UTF-8");
-        } catch (UnsupportedEncodingException e) { 
-        } 
+        } catch (UnsupportedEncodingException e) {
+        }
         return "";
     }
 

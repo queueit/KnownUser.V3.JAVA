@@ -25,7 +25,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -39,14 +38,14 @@ public class KnownUserTest {
 
     class UserInQueueServiceMock implements IUserInQueueService {
 
-        public ArrayList<ArrayList<String>> validateQueueRequestCalls = new ArrayList<>();
-        public ArrayList<ArrayList<String>> validateCancelRequestCalls = new ArrayList<>();
-        public ArrayList<ArrayList<String>> extendQueueCookieCalls = new ArrayList<>();
-        public ArrayList<ArrayList<String>> getIgnoreActionResultCalls = new ArrayList<>();
+        public ArrayList<ArrayList<String>> validateQueueRequestCalls = new ArrayList();
+        public ArrayList<ArrayList<String>> validateCancelRequestCalls = new ArrayList();
+        public ArrayList<ArrayList<String>> extendQueueCookieCalls = new ArrayList();
+        public ArrayList<ArrayList<String>> getIgnoreActionResultCalls = new ArrayList();
 
         @Override
         public RequestValidationResult validateQueueRequest(String targetUrl, String queueitToken, QueueEventConfig config, String customerId, String secretKey) throws Exception {
-            ArrayList<String> args = new ArrayList<>();
+            ArrayList<String> args = new ArrayList();
             args.add(targetUrl);
             args.add(queueitToken);
             args.add(config.getCookieDomain() + ":"
@@ -71,7 +70,7 @@ public class KnownUserTest {
                 String customerId,
                 String secretKey) throws Exception {
 
-            ArrayList<String> args = new ArrayList<>();
+            ArrayList<String> args = new ArrayList();
             args.add(targetUrl);
             args.add(config.getCookieDomain() + ":"
                     + config.getEventId() + ":"
@@ -86,7 +85,7 @@ public class KnownUserTest {
 
         @Override
         public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
-            ArrayList<String> args = new ArrayList<>();
+            ArrayList<String> args = new ArrayList();
             args.add(eventId);
             args.add(Integer.toString(cookieValidityMinute));
             args.add(cookieDomain);
@@ -96,7 +95,7 @@ public class KnownUserTest {
 
         @Override
         public RequestValidationResult getIgnoreActionResult() {
-            getIgnoreActionResultCalls.add(new ArrayList<>());
+            getIgnoreActionResultCalls.add(new ArrayList());
             return new RequestValidationResult("Ignore", "", "", "", "");
         }
     }
@@ -184,18 +183,18 @@ public class KnownUserTest {
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
         String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
         assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
-        assertTrue(decodedCookieValue.contains("|CancelConfig=EventId:eventid"));
+        assertTrue(decodedCookieValue.contains("CancelConfig=EventId:eventid"));
         assertTrue(decodedCookieValue.contains("&Version:1"));
         assertTrue(decodedCookieValue.contains("&QueueDomain:queuedomain"));
         assertTrue(decodedCookieValue.contains("&CookieDomain:cookiedomain"));
-        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
-        assertTrue(decodedCookieValue.contains("|TargetUrl=url"));
-        assertTrue(decodedCookieValue.contains("|RequestIP=80.35.35.34"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Via=1.1 example.com"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));
+        assertTrue(decodedCookieValue.contains("QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("TargetUrl=url"));
+        assertTrue(decodedCookieValue.contains("RequestIP=80.35.35.34"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_Via=1.1 example.com"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedProto=https"));
     }
 
     @Test
@@ -633,7 +632,7 @@ public class KnownUserTest {
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
         String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
         assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
-        assertTrue(decodedCookieValue.contains("|QueueConfig=EventId:eventId"));
+        assertTrue(decodedCookieValue.contains("QueueConfig=EventId:eventId"));
         assertTrue(decodedCookieValue.contains("&Version:12"));
         assertTrue(decodedCookieValue.contains("&QueueDomain:queueDomain"));
         assertTrue(decodedCookieValue.contains("&CookieDomain:cookieDomain"));
@@ -641,14 +640,14 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("&CookieValidityMinute:10"));
         assertTrue(decodedCookieValue.contains("&LayoutName:layoutName"));
         assertTrue(decodedCookieValue.contains("&Culture:culture"));
-        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
-        assertTrue(decodedCookieValue.contains("|TargetUrl=targetUrl"));
-        assertTrue(decodedCookieValue.contains("|RequestIP=80.35.35.34"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Via=1.1 example.com"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));
+        assertTrue(decodedCookieValue.contains("QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("TargetUrl=targetUrl"));
+        assertTrue(decodedCookieValue.contains("RequestIP=80.35.35.34"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_Via=1.1 example.com"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedProto=https"));
     }
 
     @Test
@@ -867,9 +866,9 @@ public class KnownUserTest {
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
         String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
         assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
-        assertTrue(decodedCookieValue.contains("|PureUrl=http://test.com?event1=true"));
-        assertTrue(decodedCookieValue.contains("|ConfigVersion=3"));
-        assertTrue(decodedCookieValue.contains("|QueueConfig=EventId:event1"));
+        assertTrue(decodedCookieValue.contains("PureUrl=http://test.com?event1=true"));
+        assertTrue(decodedCookieValue.contains("ConfigVersion=3"));
+        assertTrue(decodedCookieValue.contains("QueueConfig=EventId:event1"));
         assertTrue(decodedCookieValue.contains("&Version:3"));
         assertTrue(decodedCookieValue.contains("&QueueDomain:knownusertest.queue-it.net"));
         assertTrue(decodedCookieValue.contains("&CookieDomain:.test.com"));
@@ -877,9 +876,9 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("&CookieValidityMinute:20"));
         assertTrue(decodedCookieValue.contains("&LayoutName:Christmas Layout by Queue-it"));
         assertTrue(decodedCookieValue.contains("&Culture:da-DK"));
-        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
-        assertTrue(decodedCookieValue.contains("|TargetUrl=http://test.com?event1=true"));
-        assertTrue(decodedCookieValue.contains("|MatchedConfig=event1action"));
+        assertTrue(decodedCookieValue.contains("QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("TargetUrl=http://test.com?event1=true"));
+        assertTrue(decodedCookieValue.contains("MatchedConfig=event1action"));
     }
 
     @Test
@@ -932,15 +931,15 @@ public class KnownUserTest {
         assertTrue(responseMock.addedCookies.get(0).getName().equals(KnownUser.QueueITDebugKey));
         String decodedCookieValue = URLDecoder.decode(responseMock.addedCookies.get(0).getValue(), "UTF-8");
         assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
-        assertTrue(decodedCookieValue.contains("|PureUrl=http://test.com?event1=true"));
+        assertTrue(decodedCookieValue.contains("PureUrl=http://test.com?event1=true"));
         assertTrue(decodedCookieValue.contains("ConfigVersion=3"));
-        assertTrue(decodedCookieValue.contains("|QueueitToken=" + queueittoken));
-        assertTrue(decodedCookieValue.contains("|RequestIP=80.35.35.34"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Via=1.1 example.com"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
-        assertTrue(decodedCookieValue.contains("|RequestHttpHeader_XForwardedProto=https"));
+        assertTrue(decodedCookieValue.contains("QueueitToken=" + queueittoken));
+        assertTrue(decodedCookieValue.contains("RequestIP=80.35.35.34"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_Via=1.1 example.com"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_Forwarded=for=192.0.2.60;proto=http;by=203.0.113.43"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedFor=129.78.138.66, 129.78.64.103"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedHost=en.wikipedia.org:8080"));
+        assertTrue(decodedCookieValue.contains("RequestHttpHeader_XForwardedProto=https"));
     }
 
     @Test
@@ -1367,11 +1366,6 @@ public class KnownUserTest {
         }
 
         @Override
-        public String changeSessionId() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
         public boolean isRequestedSessionIdValid() {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
@@ -1417,11 +1411,6 @@ public class KnownUserTest {
         }
 
         @Override
-        public <T extends HttpUpgradeHandler> T upgrade(Class<T> type) throws IOException, ServletException {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
         public Object getAttribute(String string) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
@@ -1443,11 +1432,6 @@ public class KnownUserTest {
 
         @Override
         public int getContentLength() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
-        public long getContentLengthLong() {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
@@ -1609,7 +1593,7 @@ public class KnownUserTest {
 
     class HttpServletResponseMock implements HttpServletResponse {
 
-        ArrayList<Cookie> addedCookies = new ArrayList<>();
+        ArrayList<Cookie> addedCookies = new ArrayList();
 
         @Override
         public void addCookie(Cookie cookie) {
@@ -1747,11 +1731,6 @@ public class KnownUserTest {
         }
 
         @Override
-        public void setContentLengthLong(long l) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
         public void setContentType(String string) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
@@ -1803,11 +1782,11 @@ public class KnownUserTest {
                 String eventId,
                 String secretKey) throws Exception {
 
-            ArrayList<String> paramList = new ArrayList<>();
+            ArrayList<String> paramList = new ArrayList();
             paramList.add(QueueParameterHelper.EventIdKey + QueueParameterHelper.KeyValueSeparatorChar + eventId);
             paramList.add(QueueParameterHelper.RedirectTypeKey + QueueParameterHelper.KeyValueSeparatorChar + "debug");
 
-            String tokenWithoutHash = String.join(QueueParameterHelper.KeyValueSeparatorGroupChar, paramList);
+            String tokenWithoutHash = Utils.join(QueueParameterHelper.KeyValueSeparatorGroupChar, paramList);
             String hash = HashHelper.generateSHA256Hash(secretKey, tokenWithoutHash);
             String token = tokenWithoutHash + QueueParameterHelper.KeyValueSeparatorGroupChar + QueueParameterHelper.HashKey + QueueParameterHelper.KeyValueSeparatorChar + hash;
             return token;

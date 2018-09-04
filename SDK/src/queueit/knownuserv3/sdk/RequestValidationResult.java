@@ -53,7 +53,7 @@ public class RequestValidationResult {
             if (!Utils.isNullOrWhiteSpace(redirectUrl)) {
                 return URLEncoder.encode(redirectUrl, "UTF-8");
             }
-        } catch (UnsupportedEncodingException e) {           
+        } catch (UnsupportedEncodingException e) {
         }
         return "";
     }

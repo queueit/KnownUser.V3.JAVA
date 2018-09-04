@@ -1,7 +1,6 @@
 package queueit.knownuserv3.sdk;
 
 import java.util.HashMap;
-import java.util.Objects;
 
 interface IUserInQueueStateRepository {
 
@@ -20,15 +19,13 @@ interface IUserInQueueStateRepository {
 
     void cancelQueueCookie(
             String eventId,
-            String cookieDomain
-    );
+            String cookieDomain);
 
     void reissueQueueCookie(
             String eventId,
             int cookieValidityMinutes,
             String cookieDomain,
-            String secretKey
-    );
+            String secretKey);
 }
 
 class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
@@ -40,7 +37,6 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
     private static final String REDIRECT_TYPE_KEY = "RedirectType";
     private static final String EVENT_ID_KEY = "EventId";
     private static final String FIXED_COOKIE_VALIDITY_MINUTES_KEY = "FixedValidityMins";
-
     private final ICookieManager cookieManager;
 
     public static String getCookieKey(String eventId) {
@@ -117,7 +113,7 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
                     + cookieNameValueMap.get(REDIRECT_TYPE_KEY)
                     + cookieNameValueMap.get(ISSUETIME_KEY));
 
-            if (!Objects.equals(hashValue, cookieNameValueMap.get(HASH_KEY))) {
+            if (!hashValue.equals(cookieNameValueMap.get(HASH_KEY))) {
                 return false;
             }
             if (!eventId.toLowerCase().equals(cookieNameValueMap.get(EVENT_ID_KEY).toLowerCase())) {
@@ -143,7 +139,7 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
     }
 
     public static HashMap<String, String> getCookieNameValueMap(String cookieValue) {
-        HashMap<String, String> result = new HashMap<>();
+        HashMap<String, String> result = new HashMap();
         String[] cookieNameValues = cookieValue.split("&");
 
         for (int i = 0; i < cookieNameValues.length; ++i) {
@@ -172,7 +168,6 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
                     cookieNameValueMap.get(FIXED_COOKIE_VALIDITY_MINUTES_KEY),
                     cookieNameValueMap.get(REDIRECT_TYPE_KEY));
         } catch (NumberFormatException ex) {
-
         }
         return new StateInfo(false, null, null, null);
     }
@@ -190,8 +185,7 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
             String eventId,
             int cookieValidityMinutes,
             String cookieDomain,
-            String secretKey
-    ) {
+            String secretKey) {
         try {
             String cookieKey = getCookieKey(eventId);
             String cookieValueOld = this.cookieManager.getCookie(cookieKey);
@@ -226,8 +220,7 @@ class StateInfo {
     private final String fixedCookieValidityMinutes;
 
     public StateInfo(boolean isValid, String queueid, String fixedCookieValidityMinutes,
-            String redirectType
-    ) {
+            String redirectType) {
         this.isValid = isValid;
         this.queueId = queueid;
         this.fixedCookieValidityMinutes = fixedCookieValidityMinutes;
@@ -249,5 +242,4 @@ class StateInfo {
     public boolean isStateExtendable() {
         return this.isValid && Utils.isNullOrWhiteSpace(this.fixedCookieValidityMinutes);
     }
-
 }

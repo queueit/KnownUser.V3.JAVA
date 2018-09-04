@@ -49,7 +49,7 @@ public class ComparisonOperatorHelperTest {
         assertTrue(ComparisonOperatorHelper.evaluate(ComparisonOperatorType.MATCHES_WITH, false, true, "test1_test1_testshop", ".*Shop.*", null));
         assertFalse(ComparisonOperatorHelper.evaluate(ComparisonOperatorType.MATCHES_WITH, true, true, "test1_test1_testshop", ".*Shop.*", null));
     }
-    
+
     @Test
     public void Evaluate_EqualsAny() {
         assertTrue(ComparisonOperatorHelper.evaluate(ComparisonOperatorType.EQUALS_ANY, false, false, "test1", null, new String[]{"test1"}));
@@ -59,7 +59,7 @@ public class ComparisonOperatorHelperTest {
         assertFalse(ComparisonOperatorHelper.evaluate(ComparisonOperatorType.EQUALS_ANY, true, false, "test1", null, new String[]{"test1"}));
         assertFalse(ComparisonOperatorHelper.evaluate(ComparisonOperatorType.EQUALS_ANY, true, true, "test1", null, new String[]{"Test1"}));
     }
-    
+
     @Test
     public void Evaluate_ContainsAny() {
         assertTrue(ComparisonOperatorHelper.evaluate(ComparisonOperatorType.CONTAINS_ANY, false, false, "test_test1_test", null, new String[]{"test1"}));

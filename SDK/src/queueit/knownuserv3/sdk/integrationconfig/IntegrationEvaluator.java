@@ -1,7 +1,8 @@
 package queueit.knownuserv3.sdk.integrationconfig;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import javax.servlet.http.Cookie;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 
@@ -20,10 +21,11 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
             CustomerIntegration customerIntegration,
             String currentPageUrl,
             HttpServletRequest request) throws Exception {
-        
-        if(request == null)
-           throw new Exception("request is null");
-        
+
+        if (request == null) {
+            throw new Exception("request is null");
+        }
+
         for (IntegrationConfigModel integration : customerIntegration.Integrations) {
             for (TriggerModel trigger : integration.Triggers) {
                 if (evaluateTrigger(trigger, currentPageUrl, request)) {
@@ -56,17 +58,16 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     }
 
     private boolean evaluateTriggerPart(TriggerPart triggerPart, String currentPageUrl, HttpServletRequest request) {
-        switch (triggerPart.ValidatorType) {
-            case ValidatorType.URL_VALIDATOR:
-                return UrlValidatorHelper.evaluate(triggerPart, currentPageUrl);
-            case ValidatorType.COOKIE_VALIDATOR:
-                return CookieValidatorHelper.evaluate(triggerPart, request.getCookies());
-            case ValidatorType.USERAGENT_VALIDATOR:
-                return UserAgentValidatorHelper.evaluate(triggerPart, request.getHeader("User-Agent"));
-            case ValidatorType.HTTPHEADER_VALIDATOR:
-                return HttpHeaderValidatorHelper.evaluate(triggerPart, request);
-            default:
-                return false;
+        if (ValidatorType.URL_VALIDATOR.equals(triggerPart.ValidatorType)) {
+            return UrlValidatorHelper.evaluate(triggerPart, currentPageUrl);
+        } else if (ValidatorType.COOKIE_VALIDATOR.equals(triggerPart.ValidatorType)) {
+            return CookieValidatorHelper.evaluate(triggerPart, request.getCookies());
+        } else if (ValidatorType.USERAGENT_VALIDATOR.equals(triggerPart.ValidatorType)) {
+            return UserAgentValidatorHelper.evaluate(triggerPart, request.getHeader("User-Agent"));
+        } else if (ValidatorType.HTTPHEADER_VALIDATOR.equals(triggerPart.ValidatorType)) {
+            return HttpHeaderValidatorHelper.evaluate(triggerPart, request);
+        } else {
+            return false;
         }
     }
 }
@@ -84,38 +85,23 @@ final class UrlValidatorHelper {
     }
 
     private static String getUrlPart(TriggerPart triggerPart, String url) {
-        switch (triggerPart.UrlPart) {
-            case UrlPartType.PAGE_PATH:
-                return getPathFromUrl(url);
-            case UrlPartType.PAGE_URL:
-                return url;
-            case UrlPartType.HOST_NAME:
-                return getHostNameFromUrl(url);
-            default:
-                return "";
+        if (UrlPartType.PAGE_URL.equals(triggerPart.UrlPart)) {
+            return url;
         }
-    }
 
-    private static String getHostNameFromUrl(String url) {
-        return getMatchFromUrl(url,
-                "^(([^:/\\?#]+):)?(//(?<hostname>[^/\\?#]*))?([^\\?#]*)(\\?([^#]*))?(#(.*))?",
-                "hostname");
-    }
+        try {
+            URL oUrl = new URL(url);
 
-    private static String getPathFromUrl(String url) {
-        return getMatchFromUrl(url,
-                "^(([^:/\\?#]+):)?(//([^/\\?#]*))?(?<path>[^\\?#]*)(\\?([^#]*))?(#(.*))?",
-                "path");
-    }
-
-    private static String getMatchFromUrl(String url, String urlMatcher, String matchName) {
-        Pattern pattern = Pattern.compile(urlMatcher);
-        Matcher matcher = pattern.matcher(url);
-        if (!matcher.matches()) {
+            if (UrlPartType.PAGE_PATH.equals(triggerPart.UrlPart)) {
+                return oUrl.getPath();
+            } else if (UrlPartType.HOST_NAME.equals(triggerPart.UrlPart)) {
+                return oUrl.getHost();
+            } else {
+                return "";
+            }
+        } catch (MalformedURLException ex) {
             return "";
         }
-        
-        return matcher.group(matchName);        
     }
 }
 
@@ -131,9 +117,10 @@ final class CookieValidatorHelper {
     }
 
     private static String getCookie(String cookieName, Cookie[] cookieCollection) {
-        if(cookieCollection == null)
+        if (cookieCollection == null) {
             return "";
-        
+        }
+
         for (Cookie cookie : cookieCollection) {
             if (cookie.getName().equals(cookieName)) {
                 return cookie.getValue();
@@ -156,49 +143,47 @@ final class UserAgentValidatorHelper {
 }
 
 final class HttpHeaderValidatorHelper {
-    
-    public static boolean evaluate(TriggerPart triggerPart, HttpServletRequest request)
-    {
+
+    public static boolean evaluate(TriggerPart triggerPart, HttpServletRequest request) {
         return ComparisonOperatorHelper.evaluate(triggerPart.Operator,
-            triggerPart.IsNegative,
-            triggerPart.IsIgnoreCase,
-            request.getHeader(triggerPart.HttpHeaderName),
-            triggerPart.ValueToCompare,
-            triggerPart.ValuesToCompare);
+                triggerPart.IsNegative,
+                triggerPart.IsIgnoreCase,
+                request.getHeader(triggerPart.HttpHeaderName),
+                triggerPart.ValueToCompare,
+                triggerPart.ValuesToCompare);
     }
 }
 
 final class ComparisonOperatorHelper {
 
     public static boolean evaluate(
-            String opt, 
-            boolean isNegative, 
-            boolean isIgnoreCase, 
-            String value, 
-            String valueToCompare, 
+            String opt,
+            boolean isNegative,
+            boolean isIgnoreCase,
+            String value,
+            String valueToCompare,
             String[] valuesToCompare) {
-        
+
         value = (value != null) ? value : "";
         valueToCompare = (valueToCompare != null) ? valueToCompare : "";
         valuesToCompare = (valuesToCompare != null) ? valuesToCompare : new String[0];
-        
-        switch (opt) {
-            case ComparisonOperatorType.EQUALS:
-                return equals(value, valueToCompare, isNegative, isIgnoreCase);
-            case ComparisonOperatorType.CONTAINS:
-                return contains(value, valueToCompare, isNegative, isIgnoreCase);
-            case ComparisonOperatorType.STARTS_WITH:
-                return startsWith(value, valueToCompare, isNegative, isIgnoreCase);
-            case ComparisonOperatorType.ENDS_WITH:
-                return endsWith(value, valueToCompare, isNegative, isIgnoreCase);
-            case ComparisonOperatorType.MATCHES_WITH:
-                return matchesWith(value, valueToCompare, isNegative, isIgnoreCase);
-            case ComparisonOperatorType.EQUALS_ANY:
-                return equalsAny(value, valuesToCompare, isNegative, isIgnoreCase);
-            case ComparisonOperatorType.CONTAINS_ANY:
-                return containsAny(value, valuesToCompare, isNegative, isIgnoreCase);
-            default:
-                return false;
+
+        if (ComparisonOperatorType.EQUALS.equals(opt)) {
+            return equals(value, valueToCompare, isNegative, isIgnoreCase);
+        } else if (ComparisonOperatorType.CONTAINS.equals(opt)) {
+            return contains(value, valueToCompare, isNegative, isIgnoreCase);
+        } else if (ComparisonOperatorType.STARTS_WITH.equals(opt)) {
+            return startsWith(value, valueToCompare, isNegative, isIgnoreCase);
+        } else if (ComparisonOperatorType.ENDS_WITH.equals(opt)) {
+            return endsWith(value, valueToCompare, isNegative, isIgnoreCase);
+        } else if (ComparisonOperatorType.MATCHES_WITH.equals(opt)) {
+            return matchesWith(value, valueToCompare, isNegative, isIgnoreCase);
+        } else if (ComparisonOperatorType.EQUALS_ANY.equals(opt)) {
+            return equalsAny(value, valuesToCompare, isNegative, isIgnoreCase);
+        } else if (ComparisonOperatorType.CONTAINS_ANY.equals(opt)) {
+            return containsAny(value, valuesToCompare, isNegative, isIgnoreCase);
+        } else {
+            return false;
         }
     }
 
@@ -282,19 +267,21 @@ final class ComparisonOperatorHelper {
             return evaluation;
         }
     }
-    
+
     private static boolean equalsAny(String value, String[] valuesToCompare, boolean isNegative, boolean isIgnoreCase) {
         for (String valueToCompare : valuesToCompare) {
-            if(equals(value, valueToCompare, false, isIgnoreCase))
+            if (equals(value, valueToCompare, false, isIgnoreCase)) {
                 return !isNegative;
+            }
         }
         return isNegative;
     }
-    
+
     private static boolean containsAny(String value, String[] valuesToCompare, boolean isNegative, boolean isIgnoreCase) {
         for (String valueToCompare : valuesToCompare) {
-            if(contains(value, valueToCompare, false, isIgnoreCase))
+            if (contains(value, valueToCompare, false, isIgnoreCase)) {
                 return !isNegative;
+            }
         }
         return isNegative;
     }

@@ -2,7 +2,6 @@ package queueit.knownuserv3.sdk;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Objects;
 
 interface IUserInQueueService {
 
@@ -23,15 +22,14 @@ interface IUserInQueueService {
             String eventId,
             int cookieValidityMinutes,
             String cookieDomain,
-            String secretKey
-    );
+            String secretKey);
 
     RequestValidationResult getIgnoreActionResult();
 }
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "3.5.1";
+    public static final String SDK_VERSION = "3.5.2";
     private final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(IUserInQueueStateRepository queueStateRepository) {
@@ -44,8 +42,7 @@ class UserInQueueService implements IUserInQueueService {
             String queueitToken,
             QueueEventConfig config,
             String customerId,
-            String secretKey
-    ) throws Exception {
+            String secretKey) throws Exception {
         StateInfo stateInfo = this._userInQueueStateRepository.getState(config.getEventId(), config.getCookieValidityMinute(), secretKey, true);
         if (stateInfo.isValid()) {
             if (stateInfo.isStateExtendable() && config.getExtendCookieValidity()) {
@@ -77,11 +74,11 @@ class UserInQueueService implements IUserInQueueService {
             String customerId,
             String secretKey) throws Exception {
         String calculatedHash = HashHelper.generateSHA256Hash(secretKey, queueParams.getQueueITTokenWithoutHash());
-        if (!Objects.equals(calculatedHash.toUpperCase(), queueParams.getHashCode().toUpperCase())) {
+        if (!calculatedHash.toUpperCase().equals(queueParams.getHashCode().toUpperCase())) {
             return getVaidationErrorResult(customerId, targetUrl, config, queueParams, "hash");
         }
 
-        if (!Objects.equals(queueParams.getEventId().toUpperCase(), eventId.toUpperCase())) {
+        if (!eventId.toUpperCase().equals(queueParams.getEventId().toUpperCase())) {
             return getVaidationErrorResult(customerId, targetUrl, config, queueParams, "eventid");
         }
 
@@ -141,7 +138,7 @@ class UserInQueueService implements IUserInQueueService {
             int configVersion,
             String culture,
             String layoutName) throws Exception {
-        ArrayList<String> queryStringList = new ArrayList<>();
+        ArrayList<String> queryStringList = new ArrayList();
         queryStringList.add("c=" + URLEncoder.encode(customerId, "UTF-8"));
         queryStringList.add("e=" + URLEncoder.encode(eventId, "UTF-8"));
         queryStringList.add("ver=v3-java-" + URLEncoder.encode(SDK_VERSION, "UTF-8"));
@@ -155,7 +152,7 @@ class UserInQueueService implements IUserInQueueService {
             queryStringList.add("l=" + URLEncoder.encode(layoutName, "UTF-8"));
         }
 
-        return String.join("&", queryStringList);
+        return Utils.join("&", queryStringList);
     }
 
     @Override

@@ -77,7 +77,7 @@ The following method is all that is needed to validate that a user has been thro
                 response.setHeader("Pragma", "no-cache"); // HTTP 1.0
                 response.setDateHeader("Expires", 0); // Proxies.
                 //end
-                //Send the user to the queue - either becuase hash was missing or becuase is was invalid
+                //Send the user to the queue - either because hash was missing or because is was invalid
                 response.sendRedirect(validationResult.getRedirectUrl());
             } else {
                 String queryString = request.getQueryString();

@@ -92,7 +92,8 @@ The following method is all that is needed to validate that a user has been thro
         }
     }
     
-    // Helper method
+    // Helper method to get url without token.
+    // It uses patterns which is unsupported in Java 6, so if you are using this version please reach out to us.
     private String getPureUrl(HttpServletRequest request){
         Pattern pattern = Pattern.compile("([\\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", Pattern.CASE_INSENSITIVE);
         String queryString = request.getQueryString();

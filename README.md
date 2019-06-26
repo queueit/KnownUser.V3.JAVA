@@ -128,7 +128,7 @@ The following is an example of how to specify the configuration in code:
             QueueEventConfig eventConfig = new QueueEventConfig();
             eventConfig.setEventId("event1"); //ID of the queue to use           
             eventConfig.setCookieDomain(".mydomain.com"); //Optional - Domain name where the Queue-it session cookie should be saved. Default is to save on the domain of the request
-            eventConfig.setQueueDomain("queue.mydomain.com"); //Optional - Domian name of the queue. Default is [CustomerId].queue-it.net
+            eventConfig.setQueueDomain("queue.mydomain.com"); //Optional - Domain name of the queue. Default is [CustomerId].queue-it.net
             eventConfig.setCookieValidityMinute(15); //Optional - Validity of the Queue-it session cookie. Default is 10 minutes
             eventConfig.setExtendCookieValidity(false); //Optional - Should the Queue-it session cookie validity time be extended each time the validation runs? Default is true.
             eventConfig.setCulture("en-US"); //Optional - Culture of the queue ticket layout in the format specified here: https://msdn.microsoft.com/en-us/library/ee825488(v=cs.20).aspx Default is to use what is specified on Event

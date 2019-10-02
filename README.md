@@ -86,9 +86,9 @@ The following method is all that is needed to validate that a user has been thro
                 }
             }
         } catch (Exception ex) {
-            //There was an error validationg the request
-            //Use your own logging framework to log the Exception
-            //This was a configuration exception, so we let the user continue            
+            // There was an error validationg the request
+            // Use your own logging framework to log the Exception
+            // This was a configuration exception, so we let the user continue
         }
     }
     
@@ -153,8 +153,9 @@ The following is an example of how to specify the configuration in code:
                 }
             }
         } catch (Exception ex) {
-            //There was an error validationg the request
-            //Please log the error and let user continue            
+            // There was an error validationg the request
+            // Use your own logging framework to log the Exception
+            // This was a configuration exception, so we let the user continue     
         }
     }
 ```
@@ -221,9 +222,9 @@ If you have some static html pages (might be behind cache servers) and you have 
                 }
             }
         } catch (Exception ex) {
-            //There was an error validationg the request
-            //Use your own logging framework to log the Exception
-            //This was a configuration exception, so we let the user continue            
+            // There was an error validationg the request
+            // Use your own logging framework to log the Exception
+            // This was a configuration exception, so we let the user continue
         }
     }
 ```

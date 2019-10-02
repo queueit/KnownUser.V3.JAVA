@@ -53,7 +53,7 @@ final class IntegrationConfigProvider {
                 String jsonText = getJsonText(configUrl);
                 cachedIntegrationConfig = new Gson().fromJson(jsonText, CustomerIntegration.class);
                 return;
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 ++tryCount;
                 if (tryCount >= 5) {
                     //Use your favorit logging framework to log the exceptoin

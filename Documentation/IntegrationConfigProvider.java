@@ -20,10 +20,12 @@ final class IntegrationConfigProvider {
     static CustomerIntegration cachedIntegrationConfig;
     private static boolean isInitialized = false;
     private static String customerId;
+    private static String apiKey;
 
-    public static CustomerIntegration getCachedIntegrationConfig(String customerId) {
+    public static CustomerIntegration getCachedIntegrationConfig(String customerId, String apiKey) {
         if (!isInitialized) {
             IntegrationConfigProvider.customerId = customerId;
+            IntegrationConfigProvider.apiKey = apiKey;
             synchronized (LOCK_OBJECT) {
                 if (!isInitialized) {
                     refreshCache(true);
@@ -46,8 +48,7 @@ final class IntegrationConfigProvider {
         int tryCount = 0;
 
         while (tryCount < 5) {
-            long timeBaseQueryString = (System.currentTimeMillis() / 1000L);            
-            String configUrl = String.format("https://%s.queue-it.net/status/integrationconfig/%s?qr=%s", customerId, customerId, timeBaseQueryString);
+            String configUrl = String.format("https://%s.queue-it.net/status/integrationconfig/secure/%s", customerId, customerId);
 
             try {
                 String jsonText = getJsonText(configUrl);
@@ -73,6 +74,7 @@ final class IntegrationConfigProvider {
     private static String getJsonText(String url) throws IOException {
         URL resource = new URL(url);
         URLConnection connection = resource.openConnection();
+        connection.setRequestProperty("api-key", apiKey);
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         StringBuilder response = new StringBuilder();
         String inputLine;

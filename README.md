@@ -72,9 +72,9 @@ The following method is all that is needed to validate that a user has been thro
 
             if (validationResult.doRedirect()) {
                 //Adding no cache headers to prevent browsers to cache requests
-                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-                response.setHeader("Pragma", "no-cache"); // HTTP 1.0
-                response.setDateHeader("Expires", 0); // Proxies.
+                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+                response.setHeader("Pragma", "no-cache");
+                response.setHeader("Expires", "Fri, 01 Jan 1990 00:00:00 GMT");
                 //end
                 //Send the user to the queue - either because hash was missing or because is was invalid
                 response.sendRedirect(validationResult.getRedirectUrl());
@@ -139,9 +139,9 @@ The following is an example of how to specify the configuration in code:
 
             if (validationResult.doRedirect()) {
                 //Adding no cache headers to prevent browsers to cache requests
-                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-                response.setHeader("Pragma", "no-cache"); // HTTP 1.0
-                response.setDateHeader("Expires", 0); // Proxies.
+                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+                response.setHeader("Pragma", "no-cache");
+                response.setHeader("Expires", "Fri, 01 Jan 1990 00:00:00 GMT");
                 //end
                 //Send the user to the queue - either becuase hash was missing or becuase is was invalid
                 response.sendRedirect(validationResult.getRedirectUrl());

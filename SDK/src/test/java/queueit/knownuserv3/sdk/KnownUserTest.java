@@ -1386,7 +1386,7 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("&LayoutName:Christmas Layout by Queue-it"));
         assertTrue(decodedCookieValue.contains("&Culture:da-DK"));
         assertTrue(decodedCookieValue.contains("&ActionName:" + config.Name));
-        assertTrue(decodedCookieValue.contains("SdkVersion=v3-java-3.6.0"));
+        assertTrue(decodedCookieValue.contains("SdkVersion=" + UserInQueueService.SDK_VERSION));
         assertTrue(decodedCookieValue.contains("Runtime=" + GetRuntimeVersion()));
     }
 
@@ -1430,7 +1430,7 @@ public class KnownUserTest {
         assertTrue(
                 decodedCookieValue.contains("OriginalUrl=http://test.com/?event1=true&queueittoken=queueittokenvalue"));
         assertTrue(decodedCookieValue.contains("MatchedConfig=NULL"));
-        assertTrue(decodedCookieValue.contains("SdkVersion=v3-java-3.6.0"));
+        assertTrue(decodedCookieValue.contains("SdkVersion=" + UserInQueueService.SDK_VERSION)); 
         assertTrue(decodedCookieValue.contains("Runtime=" + GetRuntimeVersion()));
     }
 
@@ -1628,7 +1628,7 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains("ConfigVersion=NULL"));
         assertTrue(decodedCookieValue.contains("QueueitToken=" + queueittoken));
         assertTrue(decodedCookieValue.contains("OriginalUrl=requestUrl"));
-        assertTrue(decodedCookieValue.contains("SdkVersion=v3-java-3.6.0"));
+        assertTrue(decodedCookieValue.contains("SdkVersion=" + UserInQueueService.SDK_VERSION));
         assertTrue(decodedCookieValue.contains("Runtime=" + GetRuntimeVersion()));
         assertTrue(decodedCookieValue.contains("Exception=customerIntegrationInfo can not be null."));
 
@@ -1797,7 +1797,7 @@ public class KnownUserTest {
         assertTrue(decodedCookieValue.contains(
                 "QueueConfig=EventId:eventId&Version:12&QueueDomain:queueDomain&CookieDomain:cookieDomain&ExtendCookieValidity:true&CookieValidityMinute:10&LayoutName:layoutName&Culture:culture&ActionName:"
                         + eventConfig.getActionName()));
-        assertTrue(decodedCookieValue.contains("SdkVersion=v3-java-3.6.0"));
+        assertTrue(decodedCookieValue.contains("SdkVersion=" + UserInQueueService.SDK_VERSION));
         assertTrue(decodedCookieValue.contains("Runtime=" + GetRuntimeVersion()));
     }
 
@@ -2105,7 +2105,7 @@ public class KnownUserTest {
         assertTrue(
                 decodedCookieValue.contains("OriginalUrl=http://test.com/?event1=true&queueittoken=queueittokenvalue"));
         assertTrue(decodedCookieValue.contains("CancelConfig=NULL"));
-        assertTrue(decodedCookieValue.contains("SdkVersion=v3-java-3.6.0"));
+        assertTrue(decodedCookieValue.contains("SdkVersion=" + UserInQueueService.SDK_VERSION));
         assertTrue(decodedCookieValue.contains("Runtime=" + GetRuntimeVersion()));
         assertTrue(decodedCookieValue.contains("Exception=cancelConfig can not be null."));
     }

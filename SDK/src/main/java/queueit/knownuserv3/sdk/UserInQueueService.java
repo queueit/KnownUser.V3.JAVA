@@ -27,7 +27,7 @@ interface IUserInQueueService {
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "v3-java-" + "3.6.0";
+    public static final String SDK_VERSION = "v3-java-" + "3.6.1";
     public final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(IUserInQueueStateRepository queueStateRepository) {
@@ -55,35 +55,37 @@ class UserInQueueService implements IUserInQueueService {
             }
             return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), stateInfo.getQueueId(), null, stateInfo.getRedirectType(), config.getActionName());
         }        
-        QueueUrlParams queueParmas = QueueParameterHelper.extractQueueParams(queueitToken);
+        QueueUrlParams queueParams = QueueParameterHelper.extractQueueParams(queueitToken);
+        RequestValidationResult requestValidationResult;
+        boolean isTokenValid = false;
 
-        if (queueParmas != null) {
-            return getQueueITTokenValidationResult(targetUrl, config, queueParmas, customerId, secretKey);
-        } else {
-            return cancelQueueCookieReturnQueueResult(targetUrl, config, customerId);
+        if (queueParams != null) {
+            TokenValidationResult tokenValidationResult = validateToken(config, queueParams, secretKey);
+            isTokenValid = tokenValidationResult.isValid();
+            
+            if(isTokenValid){
+                requestValidationResult = getValidTokenResult(config, queueParams, secretKey);
+            }
+            else{
+                requestValidationResult = getErrorResult(customerId, targetUrl, config, queueParams, tokenValidationResult.getErrorCode());
+            }
         }
+        else{
+            requestValidationResult = getQueueResult(targetUrl, config, customerId);
+        }
+
+        if(stateInfo.isFound() && !isTokenValid){
+            this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain());
+        }
+
+        return requestValidationResult;
     }
 
-    private RequestValidationResult getQueueITTokenValidationResult(
-            String targetUrl,            
+    private RequestValidationResult getValidTokenResult(
             QueueEventConfig config,
-            QueueUrlParams queueParams,
-            String customerId,
-            String secretKey) throws Exception {
+            QueueUrlParams queueParams,            
+            String secretKey) throws Exception {     
         
-        String calculatedHash = HashHelper.generateSHA256Hash(secretKey, queueParams.getQueueITTokenWithoutHash());
-        if (!calculatedHash.toUpperCase().equals(queueParams.getHashCode().toUpperCase())) {
-            return cancelQueueCookieReturnErrorResult(customerId, targetUrl, config, queueParams, "hash");
-        }
-
-        if (!config.getEventId().toUpperCase().equals(queueParams.getEventId().toUpperCase())) {
-            return cancelQueueCookieReturnErrorResult(customerId, targetUrl, config, queueParams, "eventid");
-        }
-
-        if (queueParams.getTimeStamp() < System.currentTimeMillis() / 1000L) {
-            return cancelQueueCookieReturnErrorResult(customerId, targetUrl, config, queueParams, "timestamp");
-        }
-
         this._userInQueueStateRepository.store(
                 config.getEventId(),
                 queueParams.getQueueId(),
@@ -101,15 +103,13 @@ class UserInQueueService implements IUserInQueueService {
             config.getActionName());
     }
 
-    private RequestValidationResult cancelQueueCookieReturnErrorResult(
+    private RequestValidationResult getErrorResult(
             String customerId,
             String targetUrl,
             QueueEventConfig config,
             QueueUrlParams qParams,
             String errorCode) throws Exception {        
         
-        this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain());
-
         String query = getQueryString(customerId, config.getEventId(), config.getVersion(), config.getActionName(), config.getCulture(), config.getLayoutName())
                         + "&queueittoken=" + qParams.getQueueITToken() + "&ts=" + System.currentTimeMillis() / 1000L;
         
@@ -122,12 +122,11 @@ class UserInQueueService implements IUserInQueueService {
         return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), null, redirectUrl, null, config.getActionName());
     }
 
-    private RequestValidationResult cancelQueueCookieReturnQueueResult(
+    private RequestValidationResult getQueueResult(
             String targetUrl,
             QueueEventConfig config,
             String customerId) throws Exception {
         
-        this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain());
         String query = getQueryString(customerId, config.getEventId(), config.getVersion(), config.getActionName(), config.getCulture(), config.getLayoutName());
                        
         if (!Utils.isNullOrWhiteSpace(targetUrl)) {
@@ -165,7 +164,25 @@ class UserInQueueService implements IUserInQueueService {
         }
         return "https://" + queueDomain + uriPath + "?" + query;
     }   
+    
+    private TokenValidationResult validateToken(QueueEventConfig config, QueueUrlParams queueParams, String secretKey) throws Exception {
         
+        String calculatedHash = HashHelper.generateSHA256Hash(secretKey, queueParams.getQueueITTokenWithoutHash());
+        if (!calculatedHash.toUpperCase().equals(queueParams.getHashCode().toUpperCase())) {
+            return new TokenValidationResult(false, "hash");
+        }
+
+        if (!config.getEventId().toUpperCase().equals(queueParams.getEventId().toUpperCase())) {
+            return new TokenValidationResult(false, "eventid");
+        }
+
+        if (queueParams.getTimeStamp() < System.currentTimeMillis() / 1000L) {
+            return new TokenValidationResult(false, "timestamp");
+        }
+
+        return new TokenValidationResult(true, null);
+    }
+
     @Override
     public void extendQueueCookie(
             String eventId,
@@ -204,5 +221,24 @@ class UserInQueueService implements IUserInQueueService {
     @Override
     public RequestValidationResult getIgnoreActionResult(String actionName) {
         return new RequestValidationResult(ActionType.IGNORE_ACTION, null, null, null, null, actionName);
+    }
+    
+    private class TokenValidationResult
+    {
+        private final boolean isValid;
+        private final String errorCode;
+
+        public TokenValidationResult(boolean isValid, String errorCode){
+            this.isValid = isValid;
+            this.errorCode = errorCode;
+        }
+
+        public boolean isValid() {
+            return this.isValid;
+        }
+    
+        public String getErrorCode() {
+            return this.errorCode;
+        } 
     }
 }

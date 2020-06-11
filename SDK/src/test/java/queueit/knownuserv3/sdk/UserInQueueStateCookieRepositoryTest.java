@@ -341,6 +341,7 @@ public class UserInQueueStateCookieRepositoryTest {
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
         StateInfo cookieState = testObject.getState(eventId, 10, secretKey, true);
         assertTrue(cookieState.isValid());
+        assertTrue(cookieState.isFound());
         assertTrue(cookieState.getQueueId().equals(queueId));
         assertTrue(cookieState.getRedirectType().equals("queue"));
         assertTrue(cookieState.isStateExtendable());
@@ -373,6 +374,7 @@ public class UserInQueueStateCookieRepositoryTest {
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
         StateInfo cookieState = testObject.getState(eventId, 10, secretKey, true);
         assertTrue(cookieState.isValid());
+        assertTrue(cookieState.isFound());
         assertTrue(cookieState.getQueueId().equals(queueId));
         assertTrue(cookieState.getRedirectType().equals("idle"));
         assertTrue(!cookieState.isStateExtendable());
@@ -405,6 +407,7 @@ public class UserInQueueStateCookieRepositoryTest {
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
         StateInfo cookieState = testObject.getState(eventId, 10, secretKey, true);
         assertFalse(cookieState.isValid());
+        assertTrue(cookieState.isFound());
     }
 
     @Test
@@ -433,6 +436,28 @@ public class UserInQueueStateCookieRepositoryTest {
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
         StateInfo cookieState = testObject.getState(eventId, 3, secretKey, true);
         assertFalse(cookieState.isValid());
+        assertTrue(cookieState.isFound());    
+    }
 
+    @Test
+    public void getState_NoCookie_Test() {
+        String eventId = "event1";
+        String secretKey = "4e1db821-a825-49da-acd0-5d376f2068db";
+        
+        ICookieManager cookieManager = new ICookieManager() {
+
+            @Override
+            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            }
+
+            @Override
+            public String getCookie(String cookieName) {
+                return null;
+            }
+        };
+        UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
+        StateInfo cookieState = testObject.getState(eventId, 10, secretKey, true);
+        assertFalse(cookieState.isValid());
+        assertFalse(cookieState.isFound());    
     }
 }

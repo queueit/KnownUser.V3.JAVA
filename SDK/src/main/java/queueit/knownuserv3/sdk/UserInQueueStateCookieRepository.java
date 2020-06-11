@@ -157,19 +157,19 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
             String cookieKey = getCookieKey(eventId);
             String cookieValue = this.cookieManager.getCookie(cookieKey);
             if (cookieValue == null) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
             }
             HashMap<String, String> cookieNameValueMap = UserInQueueStateCookieRepository.getCookieNameValueMap(cookieValue);
             if (!isCookieValid(secretKey, cookieNameValueMap, eventId, cookieValidityMinutes, validateTime)) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(true, false, null, null, null);
             }
 
-            return new StateInfo(true, cookieNameValueMap.get(QUEUE_ID_KEY),
+            return new StateInfo(true, true, cookieNameValueMap.get(QUEUE_ID_KEY),
                     cookieNameValueMap.get(FIXED_COOKIE_VALIDITY_MINUTES_KEY),
                     cookieNameValueMap.get(REDIRECT_TYPE_KEY));
         } catch (NumberFormatException ex) {
         }
-        return new StateInfo(false, null, null, null);
+        return new StateInfo(true, false, null, null, null);
     }
 
     @Override
@@ -211,13 +211,15 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
 
 class StateInfo {
 
+    private final boolean isFound;
     private final boolean isValid;
     private final String queueId;
     private final String redirectType;
     private final String fixedCookieValidityMinutes;
 
-    public StateInfo(boolean isValid, String queueid, String fixedCookieValidityMinutes,
+    public StateInfo(boolean isFound, boolean isValid, String queueid, String fixedCookieValidityMinutes,
             String redirectType) {
+        this.isFound = isFound;
         this.isValid = isValid;
         this.queueId = queueid;
         this.fixedCookieValidityMinutes = fixedCookieValidityMinutes;
@@ -228,6 +230,9 @@ class StateInfo {
         return this.queueId;
     }
 
+    public boolean isFound() {
+        return this.isFound;
+    }
     public boolean isValid() {
         return this.isValid;
     }

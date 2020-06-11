@@ -47,7 +47,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(true, "queueId", null, "queue");
+                return new StateInfo(true, true, "queueId", null, "queue");
             }
 
             @Override
@@ -99,7 +99,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(true, "queueId", null, "queue");
+                return new StateInfo(true, true, "queueId", null, "queue");
 
             }
 
@@ -154,7 +154,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(true, "queueId", "3", "idle");
+                return new StateInfo(true, true, "queueId", "3", "idle");
             }
 
             @Override
@@ -211,7 +211,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
             }
 
             @Override
@@ -249,7 +249,7 @@ public class UserInQueueServiceTest {
         assertTrue(config.getEventId().equals(result.getEventId()));
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertEquals(result.getActionName(), config.getActionName());
-        assertTrue(conditions.get("cancelQueueCookieWasCalled"));
+        assertTrue(conditions.get("cancelQueueCookieWasCalled") == null);
     }
 
     @Test
@@ -284,7 +284,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
             }
 
             @Override
@@ -322,7 +322,7 @@ public class UserInQueueServiceTest {
         assertTrue(config.getEventId().equals(result.getEventId()));
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertEquals(result.getActionName(), config.getActionName());
-        assertTrue(conditions.get("cancelQueueCookie"));
+        assertTrue(conditions.get("cancelQueueCookie") == null);
     }
 
     @Test
@@ -357,7 +357,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
             }
 
             @Override
@@ -395,7 +395,7 @@ public class UserInQueueServiceTest {
         assertTrue(config.getEventId().equals(result.getEventId()));
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertEquals(result.getActionName(), config.getActionName());
-        assertTrue(conditions.get("cancelQueueCookie"));
+        assertTrue(conditions.get("cancelQueueCookie") == null);
     }
 
     @Test
@@ -428,7 +428,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
             }
 
             @Override
@@ -496,7 +496,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
             }
 
             @Override
@@ -562,7 +562,7 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
             }
 
             @Override
@@ -586,7 +586,7 @@ public class UserInQueueServiceTest {
         assertTrue(!conditions.get("isStoreWasCalled"));
         assertTrue(config.getEventId().equals(result.getEventId()));
         assertEquals(result.getActionName(), config.getActionName());
-        assertTrue(conditions.get("cancelQueueCookie"));
+        assertTrue(conditions.get("cancelQueueCookie") == null);
     }
 
     @Test
@@ -620,7 +620,63 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
+                    String secretKey) {
+                throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods,
+                                                                               // choose Tools | Templates.
+            }
+        };
+
+        String knownUserVersion = UserInQueueService.SDK_VERSION;
+        String expectedErrorUrl = "https://testDomain.com/?c=testCustomer&e=e1" + "&ver=" + knownUserVersion
+                + "&cver=10" + "&man=" + config.getActionName() + "&l=" + config.getLayoutName();
+
+        UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
+        RequestValidationResult result = testObject.validateQueueRequest(null, "", config, "testCustomer", "key");
+        assertTrue(result.doRedirect());
+        assertTrue(result.getRedirectUrl().toUpperCase().equals(expectedErrorUrl.toUpperCase()));
+        assertTrue(!conditions.get("isStoreWasCalled"));
+        assertTrue(config.getEventId().equals(result.getEventId()));
+        assertEquals(result.getActionName(), config.getActionName());
+        assertTrue(conditions.get("cancelQueueCookie") == null);
+    }
+
+    @Test
+    public void ValidateQueueRequest_InvalidCookie_WithoutToken_RedirectToQueue_NoTargetUrl() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
+        config.setEventId("e1");
+        config.setQueueDomain("testDomain.com");
+        config.setCookieValidityMinute(10);
+        config.setExtendCookieValidity(false);
+        config.setLayoutName("testlayout");
+        config.setVersion(10);
+        config.setActionName("QueueAction");
+        config.setCookieDomain("testDomain");
+
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
+        conditions.put("isStoreWasCalled", false);
+
+        IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
+
+            @Override
+            public void cancelQueueCookie(String eventId, String cookieDomain) {
+                conditions.put("cancelQueueCookie", true);
+            }
+
+            @Override
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
+                    String redirectType, String customerSecretKey) throws Exception {
+                conditions.put("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
+                    boolean validateTime) {
+                return new StateInfo(true, false, null, null, null);
             }
 
             @Override
@@ -676,7 +732,64 @@ public class UserInQueueServiceTest {
             @Override
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
-                return new StateInfo(false, null, null, null);
+                return new StateInfo(false, false, null, null, null);
+            }
+
+            @Override
+            public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
+                    String secretKey) {
+                throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods,
+                                                                               // choose Tools | Templates.
+            }
+        };
+
+        String targetUrl = "http://test.test.com/?b=h";
+        String knownUserVersion = UserInQueueService.SDK_VERSION;
+        UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
+        RequestValidationResult result = testObject.validateQueueRequest(targetUrl,
+                "ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895", config, "testCustomer", "key");
+        assertTrue(result.doRedirect());
+        assertTrue(result.getRedirectUrl().startsWith("https://testDomain.com/error/hash/?c=testCustomer&e=e1&ver="
+                + knownUserVersion + "&cver=10&man=" + config.getActionName()
+                + "&l=testlayout&queueittoken=ts_sasa~cv_adsasa~ce_falwwwse~q_944c1f44-60dd-4e37-aabc-f3e4bb1c8895&"));
+        assertTrue(!conditions.get("isStoreWasCalled"));
+        assertTrue(config.getEventId().equals(result.getEventId()));
+        assertEquals(result.getActionName(), config.getActionName());
+        assertTrue(conditions.get("cancelQueueCookie") == null);
+    }
+
+    @Test
+    public void ValidateRequest_InvalidCookie_InValidToken() throws Exception {
+        QueueEventConfig config = new QueueEventConfig();
+        config.setEventId("e1");
+        config.setQueueDomain("testDomain.com");
+        config.setCookieValidityMinute(10);
+        config.setExtendCookieValidity(false);
+        config.setLayoutName("testlayout");
+        config.setVersion(10);
+        config.setActionName("QueueAction");
+        config.setCookieDomain("testDomain");
+
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
+        conditions.put("isStoreWasCalled", false);
+
+        IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
+
+            @Override
+            public void cancelQueueCookie(String eventId, String cookieDomain) {
+                conditions.put("cancelQueueCookie", true);
+            }
+
+            @Override
+            public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
+                    String redirectType, String customerSecretKey) throws Exception {
+                conditions.put("isStoreWasCalled", true);
+            }
+
+            @Override
+            public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
+                    boolean validateTime) {
+                return new StateInfo(true, false, null, null, null);
             }
 
             @Override
@@ -724,9 +837,9 @@ public class UserInQueueServiceTest {
             public StateInfo getState(String eventId, int cookieValidityMinutes, String customerSecretKey,
                     boolean validateTime) {
                 if (!validateTime) {
-                    return new StateInfo(true, "queueId", null, "queue");
+                    return new StateInfo(true, true, "queueId", null, "queue");
                 } else {
-                    return new StateInfo(false, null, null, null);
+                    return new StateInfo(false, false, null, null, null);
                 }
             }
 

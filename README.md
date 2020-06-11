@@ -195,9 +195,9 @@ If you have some static html pages (might be behind cache servers) and you have 
 
             if (validationResult.doRedirect()) {
                 //Adding no cache headers to prevent browsers to cache requests
-                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
-                response.setHeader("Pragma", "no-cache"); // HTTP 1.0
-                response.setDateHeader("Expires", 0); // Proxies.
+                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+                response.setHeader("Pragma", "no-cache");
+                response.setHeader("Expires", "Fri, 01 Jan 1990 00:00:00 GMT");
                 //end
                 if (validationResult.isAjaxResult) {
                     //In case of ajax call send the user to the queue by sending a custom queue-it header and redirecting user to queue from javascript

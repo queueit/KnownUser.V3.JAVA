@@ -58,6 +58,7 @@ The following method is all that is needed to validate that a user has been thro
         try {
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
+	    String apiKey = "Your api-key as specified in Go Queue-it self-service platform";
 
             String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
@@ -65,7 +66,7 @@ The following method is all that is needed to validate that a user has been thro
 	    // The pureUrl is used to match Triggers and as the Target url (where to return the users to)
             // It is therefor important that the pureUrl is exactly the url of the users browsers. So if your webserver is 
             // e.g. behind a load balancer that modifies the host name or port, reformat the pureUrl before proceeding           
-            CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId);
+            CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId, apiKey);
 
             //Verify if the user has been through the queue
             RequestValidationResult validationResult = KnownUser.validateRequestByIntegrationConfig(

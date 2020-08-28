@@ -90,8 +90,7 @@ The following method is all that is needed to validate that a user has been thro
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && 
-				                            validationResult.getActionType() !=null && !validationResult.getActionType().isEmpty()) {
+		if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && validationResult.getActionType() == "Queue") {                
                     response.sendRedirect(pureUrl);
                     response.getOutputStream().flush();
                     response.getOutputStream().close();
@@ -179,7 +178,7 @@ The following is an example of how to specify the configuration in code:
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey)) {
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && validationResult.getActionType() == "Queue") {
                     response.sendRedirect(pureUrl);
                 }
             }

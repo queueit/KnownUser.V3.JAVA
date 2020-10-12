@@ -94,9 +94,6 @@ The following method is all that is needed to validate that a user has been thro
                     response.sendRedirect(pureUrl);
                     response.getOutputStream().flush();
                     response.getOutputStream().close();
-                } else {
-                    RequestDispatcher rd = request.getRequestDispatcher("resource.xhtml");
-                    rd.forward(request, response);
                 }
             }
         } catch (Exception ex) {

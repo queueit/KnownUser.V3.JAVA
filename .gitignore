@@ -6,3 +6,6 @@
 /SDK/dist
 /.vs
 /SDK/target
+
+/demo
+.idea

@@ -1,9 +1,21 @@
->You can fínd the latest released version [here](https://github.com/queueit/KnownUser.V3.JAVA/releases/latest).
+>You can find the latest released version [here](https://github.com/queueit/KnownUser.V3.JAVA/releases/latest).
 
 # Queue-it KnownUser SDK for Java 
-The Queue-it Security Framework is used to ensure that end users cannot bypass the queue by adding a server-side integration to your server.
+The Queue-it Security Framework ensures that end users cannot bypass the queue by adding a server-side integration to your server.
 
 Java 6 (and above) is supported from SDK v.3.5.2. Older SDK versions require at least Java 8.
+
+## Installation
+You can install this SDK in a couple of ways:
+ - Clone the repository and use it as a dependency
+ - Include the following maven dependency:
+```xml
+<dependency>
+  <groupId>com.queue-it.connector</groupId>
+  <artifactId>connector</artifactId>
+  <version>3.6.1</version>
+</dependency>
+```
 
 ## Introduction
 When a user is redirected back from the queue to your website, the queue engine can attache a query string parameter (`queueittoken`) containing some information about the user. 

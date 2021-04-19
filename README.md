@@ -102,7 +102,7 @@ The following method is all that is needed to validate that a user has been thro
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-		if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && validationResult.getActionType() == "Queue") {                
+		if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && "Queue".equals(validationResult.getActionType()) ) {                
                     response.sendRedirect(pureUrl);
                     response.getOutputStream().flush();
                     response.getOutputStream().close();

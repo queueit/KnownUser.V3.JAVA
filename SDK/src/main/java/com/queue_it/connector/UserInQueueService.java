@@ -28,7 +28,7 @@ interface IUserInQueueService {
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "v3-java-" + "3.6.1";
+    public static final String SDK_VERSION = "v3-java-" + "3.6.2";
     public final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(IUserInQueueStateRepository queueStateRepository) {

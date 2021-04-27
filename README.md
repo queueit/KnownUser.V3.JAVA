@@ -13,7 +13,7 @@ You can install this SDK in a couple of ways:
 <dependency>
   <groupId>com.queue-it.connector</groupId>
   <artifactId>connector</artifactId>
-  <version>3.6.1</version>
+  <version>3.6.2</version>
 </dependency>
 ```
 

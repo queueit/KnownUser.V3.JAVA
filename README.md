@@ -139,3 +139,8 @@ The following is an example of how to specify the configuration in code:
         }
     }
 ```
+
+## Extracting information from QueueITToken
+When users are redirected back from queue-it website they carry a QueueITToken with some information which is used to validate their request by SDK. 
+In specific cases you would like to validate, process or extract specfic parameters you can use QueueParameterHelper class in [KnownUserHelper.java](https://github.com/queueit/KnownUser.V3.JAVA/blob/master/Documentation/KnownUserHelper.java).
+Calling *QueueParameterHelper.getIsTokenValid()* will validate the token and passing QueueITToken to *QueueParameterHelper.extractQueueParams* you will get a QueueUrlParams result containing all parameters found in the token.

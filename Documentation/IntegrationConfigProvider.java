@@ -75,6 +75,7 @@ final class IntegrationConfigProvider {
         URL resource = new URL(url);
         URLConnection connection = resource.openConnection();
         connection.setRequestProperty("api-key", apiKey);
+        connection.setRequestProperty("User-Agent", "queueit-connector");
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         StringBuilder response = new StringBuilder();
         String inputLine;

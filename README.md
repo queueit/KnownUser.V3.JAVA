@@ -62,9 +62,9 @@ The following method is all that is needed to validate that a user has been thro
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
                 if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && "Queue".equals(validationResult.getActionType()) ) {
-                response.sendRedirect(pureUrl);
-                response.getOutputStream().flush();
-                response.getOutputStream().close();
+                    response.sendRedirect(pureUrl);
+                    response.getOutputStream().flush();
+                    response.getOutputStream().close();
                 }
             }
         } catch (Exception ex) {

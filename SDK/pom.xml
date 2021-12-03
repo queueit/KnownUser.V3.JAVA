@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.queue-it.connector</groupId>
     <artifactId>connector</artifactId>
-    <version>3.6.2</version>
+    <version>3.7.0</version>
     <name>KnownUserV3</name>
     <description>SDK for integrating your application with Queue-it</description>
     <url>https://github.com/queueit/KnownUser.V3.JAVA</url>
@@ -122,7 +122,7 @@
             </build>
         </profile>
     </profiles>
-
+    
     <build>
         <plugins>
             <plugin>

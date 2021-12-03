@@ -6,6 +6,9 @@ import org.junit.Test;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
+
+import com.queue_it.connector.KnownUserRequestWrapper;
+
 import java.io.BufferedReader;
 import java.security.Principal;
 import java.util.*;
@@ -17,7 +20,7 @@ class HttpServletRequestMock implements HttpServletRequest {
     public String UserAgent = "";
     public String RequestURL;
     public String QueryString;
-    public HashMap<String, String> Headers = new HashMap<>();
+    public HashMap<String, String> Headers = new HashMap<String, String>();
 
     @Override
     public String getAuthType() {
@@ -397,10 +400,12 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[0];
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[0];
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertNull(result);
     }
 
@@ -444,11 +449,13 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[1];
-        httpContextMock.CookiesValue[0] = new Cookie("c1", "value1");
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[1];
+        requestMock.CookiesValue[0] = new Cookie("c1", "value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertEquals("integration1", result.Name);
     }
 
@@ -493,11 +500,13 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[1];
-        httpContextMock.CookiesValue[0] = new Cookie("c2", "value1");
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[1];
+        requestMock.CookiesValue[0] = new Cookie("c2", "value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertNull(result);
     }
 
@@ -540,11 +549,13 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[1];
-        httpContextMock.CookiesValue[0] = new Cookie("c1", "value1");
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[1];
+        requestMock.CookiesValue[0] = new Cookie("c1", "value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertEquals("integration1", result.Name);
     }
 
@@ -594,10 +605,12 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[0];
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[0];
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertEquals("integration1", result.Name);
     }
 
@@ -647,10 +660,12 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[0];
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[0];
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertNull(result);
     }
 
@@ -728,11 +743,13 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[1];
-        httpContextMock.CookiesValue[0] = new Cookie("c1", "Value1");
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[1];
+        requestMock.CookiesValue[0] = new Cookie("c1", "Value1");
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertEquals("integration1", result.Name);
     }
 
@@ -784,12 +801,14 @@ public class IntegrationEvaluatorTest {
 
         String url = "http://test.tesdomain.com:8080/test?q=2";
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.CookiesValue = new Cookie[1];
-        httpContextMock.CookiesValue[0] = new Cookie("c1", "value1");
-        httpContextMock.UserAgent = "Googlebot";
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.CookiesValue = new Cookie[1];
+        requestMock.CookiesValue[0] = new Cookie("c1", "value1");
+        requestMock.UserAgent = "Googlebot";
 
-        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, httpContextMock);
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
+
+        IntegrationConfigModel result = testObject.getMatchedIntegrationConfig(customerIntegration, url, wrappedRequest);
         assertNull(result);
     }
 }

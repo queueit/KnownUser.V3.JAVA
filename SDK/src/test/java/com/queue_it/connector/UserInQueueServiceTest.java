@@ -26,19 +26,19 @@ public class UserInQueueServiceTest {
         config.setExtendCookieValidity(false);
         config.setActionName("QueueAction");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes,
-                              String cookieDomainString, String redirectType, String customerSecretKey) {
+                              String cookieDomainString, Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -50,7 +50,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -76,20 +76,22 @@ public class UserInQueueServiceTest {
         config.setExtendCookieValidity(true);
         config.setCookieDomain(".testdomain.com");
         config.setActionName("QueueAction");
-        final HashMap<String, HashMap<String, Object>> callInfo = new HashMap<>();
-        callInfo.put("firstCall", new HashMap<>());
+        final HashMap<String, HashMap<String, Object>> callInfo = new HashMap<String, HashMap<String, Object>>();
+        callInfo.put("firstCall", new HashMap<String, Object>());
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
-                HashMap<String, Object> info = new HashMap<>();
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
+                HashMap<String, Object> info = new HashMap<String, Object>();
                 info.put("eventId", eventId);
                 info.put("fixedCookieValidityMinutes", fixedCookieValidityMinutes);
                 info.put("redirectType", redirectType);
                 info.put("cookieDomain", cookieDomain);
                 info.put("queueId", queueId);
                 info.put("customerSecretKey", customerSecretKey);
+                info.put("isCookieHttpOnly", isCookieHttpOnly);
+                info.put("isCookieSecure", isCookieSecure);
                 callInfo.put("firstCall", info);
             }
 
@@ -101,13 +103,13 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -135,14 +137,14 @@ public class UserInQueueServiceTest {
         config.setExtendCookieValidity(true);
         config.setActionName("QueueAction");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -153,13 +155,13 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -185,19 +187,19 @@ public class UserInQueueServiceTest {
         config.setActionName("QueueAction");
         config.setCookieDomain("TestDomain");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookieWasCalled", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -209,7 +211,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -257,19 +259,19 @@ public class UserInQueueServiceTest {
         config.setCookieDomain("testDomain");
         String customerKey = "4e1db821-a825-49da-acd0-5d376f2068db";
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookie", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -281,7 +283,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -329,19 +331,19 @@ public class UserInQueueServiceTest {
         config.setCookieDomain("testDomain");
         String customerKey = "4e1db821-a825-49da-acd0-5d376f2068db";
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookie", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -353,7 +355,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -399,19 +401,21 @@ public class UserInQueueServiceTest {
         config.setActionName("QueueAction");
         String customerKey = "4e1db821-a825-49da-acd0-5d376f2068db";
 
-        final HashMap<String, HashMap<String, Object>> callInfo = new HashMap<>();
-        callInfo.put("firstCall", new HashMap<>());
+        final HashMap<String, HashMap<String, Object>> callInfo = new HashMap<String, HashMap<String, Object>>();
+        callInfo.put("firstCall", new HashMap<String, Object>());
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
-                HashMap<String, Object> info = new HashMap<>();
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
+                HashMap<String, Object> info = new HashMap<String, Object>();
                 info.put("eventId", eventId);
                 info.put("fixedCookieValidityMinutes", fixedCookieValidityMinutes);
                 info.put("cookieDomain", cookieDomain);
                 info.put("redirectType", redirectType);
                 info.put("customerSecretKey", customerSecretKey);
+                info.put("isCookieHttpOnly", isCookieHttpOnly);
+                info.put("isCookieSecure", isCookieSecure);
                 callInfo.put("firstCall", info);
             }
 
@@ -422,16 +426,18 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
-                HashMap<String, Object> obj = new HashMap<>();
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
+                HashMap<String, Object> obj = new HashMap<String, Object>();
                 obj.put("eventId", eventId);
                 obj.put("cookieDomain", cookieDomain);
+                obj.put("isCookieHttpOnly", isCookieHttpOnly);
+                obj.put("isCookieSecure", isCookieSecure);
                 callInfo.put("cancelQueueCookieWasCalled", obj);
             }
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -466,19 +472,21 @@ public class UserInQueueServiceTest {
         config.setCookieDomain("testDomain");
         String customerKey = "secretekeyofuser";
 
-        final HashMap<String, HashMap<String, Object>> callInfo = new HashMap<>();
-        callInfo.put("firstCall", new HashMap<>());
+        final HashMap<String, HashMap<String, Object>> callInfo = new HashMap<String, HashMap<String, Object>>();
+        callInfo.put("firstCall", new HashMap<String, Object>());
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
-                HashMap<String, Object> info = new HashMap<>();
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
+                HashMap<String, Object> info = new HashMap<String, Object>();
                 info.put("eventId", eventId);
                 info.put("fixedCookieValidityMinutes", fixedCookieValidityMinutes);
                 info.put("cookieDomain", cookieDomain);
                 info.put("redirectType", redirectType);
                 info.put("customerSecretKey", customerSecretKey);
+                info.put("isCookieHttpOnly", isCookieHttpOnly);
+                info.put("isCookieSecure", isCookieSecure);
                 callInfo.put("firstCall", info);
             }
 
@@ -489,16 +497,18 @@ public class UserInQueueServiceTest {
             }
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
-                HashMap<String, Object> obj = new HashMap<>();
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
+                HashMap<String, Object> obj = new HashMap<String, Object>();
                 obj.put("eventId", eventId);
                 obj.put("cookieDomain", cookieDomain);
+                obj.put("isCookieHttpOnly", isCookieHttpOnly);
+                obj.put("isCookieSecure", isCookieSecure);
                 callInfo.put("cancelQueueCookieWasCalled", obj);
             }
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -531,19 +541,19 @@ public class UserInQueueServiceTest {
         config.setActionName("QueueAction");
         config.setQueueDomain("testDomain.com");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookie", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -555,7 +565,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -588,19 +598,19 @@ public class UserInQueueServiceTest {
         config.setActionName("QueueAction");
         config.setCookieDomain("testDomain");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookie", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -612,7 +622,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -643,19 +653,19 @@ public class UserInQueueServiceTest {
         config.setActionName("QueueAction");
         config.setCookieDomain("testDomain");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookie", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -667,7 +677,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -698,19 +708,19 @@ public class UserInQueueServiceTest {
         config.setActionName("QueueAction");
         config.setCookieDomain("testDomain");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookie", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -722,7 +732,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -754,19 +764,19 @@ public class UserInQueueServiceTest {
         config.setActionName("QueueAction");
         config.setCookieDomain("testDomain");
 
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isStoreWasCalled", false);
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookie", true);
             }
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
                 conditions.put("isStoreWasCalled", true);
             }
 
@@ -778,7 +788,7 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
         };
@@ -800,6 +810,7 @@ public class UserInQueueServiceTest {
 
     @Test
     public void validateCancelRequest() throws Exception {
+        String QueueId = "queueId";
         CancelEventConfig config = new CancelEventConfig();
         config.setEventId("e1");
         config.setQueueDomain("testDomain.com");
@@ -807,13 +818,13 @@ public class UserInQueueServiceTest {
         config.setVersion(10);
         config.setActionName("Queue Action (._~-) &!*|'\"");
 
-        final HashMap<String, String> conditions = new HashMap<>();
+        final HashMap<String, String> conditions = new HashMap<String, String>();
 
         IUserInQueueStateRepository cookieProviderMock = new IUserInQueueStateRepository() {
 
             @Override
             public void store(String eventId, String queueId, Integer fixedCookieValidityMinutes, String cookieDomain,
-                              String redirectType, String customerSecretKey) {
+                              Boolean isCookieHttpOnly, Boolean isCookieSecure, String redirectType, String customerSecretKey) {
             }
 
             @Override
@@ -828,18 +839,18 @@ public class UserInQueueServiceTest {
 
             @Override
             public void reissueQueueCookie(String eventId, int cookieValidityMinutes, String cookieDomain,
-                                           String secretKey) {
+                                           Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
 
             @Override
-            public void cancelQueueCookie(String eventId, String cookieDomain) {
+            public void cancelQueueCookie(String eventId, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure) {
                 conditions.put("cancelQueueCookieWasCalled", "eventId:" + eventId + ",cookieDomain:" + cookieDomain);
             }
         };
         String knownUserVersion = UserInQueueService.SDK_VERSION;
         String expectedMan = "Queue%20Action%20%28._%7E-%29%20%26%21%2A%7C%27%22";
-        String expectedUrl = "https://testDomain.com/cancel/testCustomer/e1/?c=testCustomer&e=e1" + "&ver="
+        String expectedUrl = "https://testDomain.com/cancel/testCustomer/e1/" + QueueId + "?c=testCustomer&e=e1" + "&ver="
                 + knownUserVersion + "&cver=10" + "&man=" + expectedMan + "&r=url";
 
         UserInQueueService testObject = new UserInQueueService(cookieProviderMock);
@@ -847,7 +858,7 @@ public class UserInQueueServiceTest {
 
         assertEquals("eventId:e1,cookieDomain:testdomain", conditions.get("cancelQueueCookieWasCalled"));
         assertTrue(result.doRedirect());
-        assertEquals("queueId", result.getQueueId());
+        assertEquals(QueueId, result.getQueueId());
         String expUrl = expectedUrl.toLowerCase();
         String rdrUrl = result.getRedirectUrl().toLowerCase();
         assertEquals(expUrl, rdrUrl);
@@ -872,7 +883,7 @@ public class UserInQueueServiceTest {
         public static String generateToken(Date timeStamp, String eventId, boolean extendableCookie,
                                            Integer cookieValidityMinute, String secretKey, String redirectType) {
 
-            ArrayList<String> paramList = new ArrayList<>();
+            ArrayList<String> paramList = new ArrayList<String>();
 
             paramList.add(QueueParameterHelper.TimeStampKey + QueueParameterHelper.KeyValueSeparatorChar
                     + GetUnixTimestamp(timeStamp));

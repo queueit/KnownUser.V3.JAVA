@@ -11,6 +11,8 @@ public class QueueEventConfig {
     private String cookieDomain;
     private int version;
     private String actionName = "unspecified";
+    private Boolean isCookieHttpOnly;
+    private Boolean isCookieSecure;
 
     public String getEventId() {
         return eventId;
@@ -88,12 +90,30 @@ public class QueueEventConfig {
         return actionName;
     }
 
+    public Boolean getIsCookieHttpOnly() {
+        return this.isCookieHttpOnly;
+    }
+
+    public void setIsCookieHttpOnly(Boolean cookieHttpOnly) {
+        this.isCookieHttpOnly = cookieHttpOnly;
+    }
+
+    public Boolean getIsCookieSecure() {
+        return this.isCookieSecure;
+    }
+
+    public void setIsCookieSecure(Boolean cookieSecure) {
+        this.isCookieSecure = cookieSecure;
+    }
+
     @Override
     public String toString() {
         return "EventId:" + eventId
                 + "&Version:" + version
                 + "&QueueDomain:" + queueDomain
                 + "&CookieDomain:" + cookieDomain
+                + "&IsCookieHttpOnly:" + isCookieHttpOnly
+                + "&IsCookieSecure:" + isCookieSecure
                 + "&ExtendCookieValidity:" + extendCookieValidity
                 + "&CookieValidityMinute:" + cookieValidityMinute
                 + "&LayoutName:" + layoutName

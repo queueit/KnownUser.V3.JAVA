@@ -16,27 +16,29 @@ public class UserInQueueStateCookieRepositoryTest {
         String queueId = "528f01d4-30f9-4753-95b3-2c8c33966abc";
         String cookieKey = UserInQueueStateCookieRepository.getCookieKey(eventId);
         int cookieValidity = 10;
-        final HashMap<String, HashMap<String, Object>> cookies = new HashMap<>();
-        cookies.put(cookieKey, new HashMap<>());
+        final HashMap<String, HashMap<String, Object>> cookies = new HashMap<String, HashMap<String, Object>>();
+        cookies.put(cookieKey, new HashMap<String, Object>());
 
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
-                HashMap<String, Object> cookie = cookies.get(cookieName);
-                cookie.put("cookieValue", cookieValue);
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
+                HashMap<String, Object> cookie = cookies.get(name);
+                cookie.put("cookieValue", value);
                 cookie.put("expiration", expiration);
-                cookie.put("cookieDomain", cookieDomain);
+                cookie.put("cookieDomain", domain);
+                cookie.put("isCookieHttpOnly", isHttpOnly);
+                cookie.put("isCookieSecure", isSecure);
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                return String.valueOf(cookies.get(cookieName).get("cookieValue"));
+            public String getCookie(String name) {
+                return String.valueOf(cookies.get(name).get("cookieValue"));
             }
         };
 
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.store(eventId, queueId, null, cookieDomain, "Queue", secretKey);
+        testObject.store(eventId, queueId, null, cookieDomain, true, false, "Queue", secretKey);
         StateInfo state = testObject.getState(eventId, cookieValidity, secretKey, true);
 
         assertTrue(state.isValid());
@@ -47,6 +49,8 @@ public class UserInQueueStateCookieRepositoryTest {
         assertTrue(Math.abs(System.currentTimeMillis() / 1000L - issueTime) < 2);
         assertEquals(Integer.parseInt(cookies.get(cookieKey).get("expiration").toString()), 24 * 60 * 60);
         assertEquals(cookies.get(cookieKey).get("cookieDomain"), cookieDomain);
+        assertEquals(cookies.get(cookieKey).get("isCookieHttpOnly"), true);
+        assertEquals(cookies.get(cookieKey).get("isCookieSecure"), false);
     }
 
     @Test
@@ -57,23 +61,23 @@ public class UserInQueueStateCookieRepositoryTest {
         String queueId = "528f01d4-30f9-4753-95b3-2c8c33966abc";
         String cookieKey = UserInQueueStateCookieRepository.getCookieKey(eventId);
         int cookieValidity = 10;
-        final HashMap<String, String> cookies = new HashMap<>();
+        final HashMap<String, String> cookies = new HashMap<String, String>();
 
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
-                cookies.put(cookieName, cookieValue);
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
+                cookies.put(name, value);
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                return cookies.get(cookieName);
+            public String getCookie(String name) {
+                return cookies.get(name);
             }
         };
 
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.store(eventId, queueId, cookieValidity, cookieDomain, "Queue", secretKey);
+        testObject.store(eventId, queueId, cookieValidity, cookieDomain, true, true, "Queue", secretKey);
 
         StateInfo state = testObject.getState(eventId, 10, secretKey, true);
         assertTrue(state.isValid());
@@ -91,22 +95,22 @@ public class UserInQueueStateCookieRepositoryTest {
         String secretKey = "4e1db821-a825-49da-acd0-5d376f2068db";
         String cookieDomain = ".test.com";
         String queueId = "528f01d4-30f9-4753-95b3-2c8c33966abc";
-        final HashMap<String, String> cookies = new HashMap<>();
+        final HashMap<String, String> cookies = new HashMap<String, String>();
 
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
-                cookies.put(cookieName, cookieValue);
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
+                cookies.put(name, value);
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                return cookies.get(cookieName);
+            public String getCookie(String name) {
+                return cookies.get(name);
             }
         };
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.store(eventId, queueId, null, cookieDomain, "Queue", secretKey);
+        testObject.store(eventId, queueId, null, cookieDomain, true, true, "Queue", secretKey);
 
         StateInfo state = testObject.getState(eventId, -1, secretKey, true);
         assertFalse(state.isValid());
@@ -118,22 +122,22 @@ public class UserInQueueStateCookieRepositoryTest {
         String secretKey = "4e1db821-a825-49da-acd0-5d376f2068db";
         String cookieDomain = ".test.com";
         String queueId = "528f01d4-30f9-4753-95b3-2c8c33966abc";
-        final HashMap<String, String> cookies = new HashMap<>();
+        final HashMap<String, String> cookies = new HashMap<String, String>();
 
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
-                cookies.put(cookieName, cookieValue);
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
+                cookies.put(name, value);
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                return cookies.get(cookieName);
+            public String getCookie(String name) {
+                return cookies.get(name);
             }
         };
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.store(eventId, queueId, -1, cookieDomain, "Idle", secretKey);
+        testObject.store(eventId, queueId, -1, cookieDomain, true, true, "Idle", secretKey);
 
         StateInfo state = testObject.getState(eventId, 10, secretKey, true);
         assertFalse(state.isValid());
@@ -146,22 +150,22 @@ public class UserInQueueStateCookieRepositoryTest {
         String cookieDomain = ".test.com";
         String queueId = "528f01d4-30f9-4753-95b3-2c8c33966abc";
 
-        final HashMap<String, String> cookies = new HashMap<>();
+        final HashMap<String, String> cookies = new HashMap<String, String>();
 
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
-                cookies.put(cookieName, cookieValue);
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
+                cookies.put(name, value);
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                return cookies.get(cookieName);
+            public String getCookie(String name) {
+                return cookies.get(name);
             }
         };
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.store(eventId, queueId, null, cookieDomain, "Queue", secretKey);
+        testObject.store(eventId, queueId, null, cookieDomain, true, true, "Queue", secretKey);
         StateInfo state = testObject.getState(eventId, 10, secretKey, true);
         assertTrue(state.isValid());
 
@@ -179,17 +183,17 @@ public class UserInQueueStateCookieRepositoryTest {
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
             }
 
             @Override
-            public String getCookie(String cookieName) {
+            public String getCookie(String name) {
                 return "FixedValidityMins=ooOOO&Expires=|||&QueueId=000&Hash=23232$$$";
             }
         };
 
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.store(eventId, queueId, null, cookieDomain, "Queue", secretKey);
+        testObject.store(eventId, queueId, null, cookieDomain, true, true, "Queue", secretKey);
         StateInfo state = testObject.getState(eventId, 10, secretKey, true);
         assertFalse(state.isValid());
     }
@@ -202,35 +206,37 @@ public class UserInQueueStateCookieRepositoryTest {
         String cookieDomain = "testDomain";
 
         String cookieKey = UserInQueueStateCookieRepository.getCookieKey(eventId);
-        final HashMap<String, HashMap<String, Object>> cookies = new HashMap<>();
-        cookies.put(cookieKey + "1", new HashMap<>());
-        cookies.put(cookieKey + "2", new HashMap<>());
+        final HashMap<String, HashMap<String, Object>> cookies = new HashMap<String, HashMap<String, Object>>();
+        cookies.put(cookieKey + "1", new HashMap<String, Object>());
+        cookies.put(cookieKey + "2", new HashMap<String, Object>());
 
         ICookieManager cookieManager = new ICookieManager() {
 
             public int setCookieCallNumber = 0;
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
                 setCookieCallNumber++;
-                HashMap<String, Object> cookie = cookies.get(cookieName + setCookieCallNumber);
-                cookie.put("cookieValue", cookieValue);
+                HashMap<String, Object> cookie = cookies.get(name + setCookieCallNumber);
+                cookie.put("cookieValue", value);
                 cookie.put("expiration", expiration);
-                cookie.put("cookieDomain", cookieDomain);
+                cookie.put("cookieDomain", domain);
+                cookie.put("isCookieHttpOnly", isHttpOnly);
+                cookie.put("isCookieSecure", isSecure);
 
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                return String.valueOf(cookies.get(cookieName + setCookieCallNumber).get("cookieValue"));
+            public String getCookie(String name) {
+                return String.valueOf(cookies.get(name + setCookieCallNumber).get("cookieValue"));
             }
         };
 
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.store(eventId, queueId, -1, "cookieDomain", "Idle", secretKey);
+        testObject.store(eventId, queueId, -1, "cookieDomain", true, true, "Idle", secretKey);
         assertTrue(testObject.getState(eventId, 10, secretKey, false).isValid());
 
-        testObject.cancelQueueCookie(eventId, cookieDomain);
+        testObject.cancelQueueCookie(eventId, cookieDomain, true, true);
 
         assertEquals(0, Integer.parseInt(cookies.get(cookieKey + "2").get("expiration").toString()));
         assertNull(cookies.get(cookieKey + "2").get("cookieValue"));
@@ -243,26 +249,28 @@ public class UserInQueueStateCookieRepositoryTest {
         String eventId = "event1";
         String secretKey = "secretKey";
         String queueId = "528f01d4-30f9-4753-95b3-2c8c33966abc";
-        final HashMap<String, Object> cookie = new HashMap<>();
+        final HashMap<String, Object> cookie = new HashMap<String, Object>();
 
         long issueTime = (System.currentTimeMillis() / 1000L - 120);
         String hash = HashHelper.generateSHA256Hash(secretKey, eventId + queueId + "3" + "idle" + issueTime);
-        final String cookieValue = "EventId=" + eventId + "&QueueId=" + queueId + "&FixedValidityMins=3&RedirectType=idle&IssueTime=" + issueTime + "&Hash=" + hash;
+        final String cookieValue = "EventId=" + eventId + "&QueueId=" + queueId + "&FixedValidityMins=3&RedirectType=idle&IssueTime=" + issueTime + "&IsCookieHttpOnly=True&IsCookieSecure=True&Hash=" + hash;
         ICookieManager cookieManager = new ICookieManager() {
 
             boolean isSetCookieCalled = false;
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
-                cookie.put("cookieValue", cookieValue);
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
+                cookie.put("cookieValue", value);
                 cookie.put("expiration", expiration);
-                cookie.put("cookieDomain", cookieDomain);
+                cookie.put("cookieDomain", domain);
+                cookie.put("isCookieHttpOnly", isHttpOnly);
+                cookie.put("isCookieSecure", isSecure);
                 isSetCookieCalled = true;
 
             }
 
             @Override
-            public String getCookie(String cookieName) {
+            public String getCookie(String name) {
                 if (!isSetCookieCalled) {
                     return cookieValue;
                 }
@@ -273,7 +281,7 @@ public class UserInQueueStateCookieRepositoryTest {
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
         assertTrue(testObject.getState(eventId, 10, secretKey, true).isValid());
 
-        testObject.reissueQueueCookie(eventId, 12, "cookieDomain", secretKey);
+        testObject.reissueQueueCookie(eventId, 12, "cookieDomain", true, true, secretKey);
 
         StateInfo state = testObject.getState(eventId, 10, secretKey, true);
 
@@ -285,6 +293,8 @@ public class UserInQueueStateCookieRepositoryTest {
         assertTrue(Math.abs(System.currentTimeMillis() / 1000L - newIssueTime) < 2);
         assertEquals(Integer.parseInt(cookie.get("expiration").toString()), 24 * 60 * 60);
         assertEquals("cookieDomain", cookie.get("cookieDomain"));
+        assertTrue((Boolean)cookie.get("isCookieHttpOnly"));
+        assertTrue((Boolean)cookie.get("isCookieSecure"));
     }
 
     @Test
@@ -292,23 +302,23 @@ public class UserInQueueStateCookieRepositoryTest {
 
         String eventId = "event1";
         String secretKey = "secretKey";
-        final HashMap<String, Boolean> conditions = new HashMap<>();
+        final HashMap<String, Boolean> conditions = new HashMap<String, Boolean>();
         conditions.put("isSetCookieCalled", false);
 
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
                 conditions.put("isSetCookieCalled", true);
             }
 
             @Override
-            public String getCookie(String cookieName) {
+            public String getCookie(String name) {
                 return null;
             }
         };
         UserInQueueStateCookieRepository testObject = new UserInQueueStateCookieRepository(cookieManager);
-        testObject.reissueQueueCookie(eventId, 12, "queueDomain", secretKey);
+        testObject.reissueQueueCookie(eventId, 12, "queueDomain", true, true, secretKey);
         assertFalse(conditions.get("isSetCookieCalled"));
     }
 
@@ -325,12 +335,12 @@ public class UserInQueueStateCookieRepositoryTest {
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                if (cookieName.endsWith(cookieKey)) {
+            public String getCookie(String name) {
+                if (name.endsWith(cookieKey)) {
                     return cookieValue;
                 }
                 return null;
@@ -358,12 +368,12 @@ public class UserInQueueStateCookieRepositoryTest {
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                if (cookieName.equals(cookieKey)) {
+            public String getCookie(String name) {
+                if (name.equals(cookieKey)) {
                     return cookieValue;
                 }
                 return null;
@@ -391,12 +401,12 @@ public class UserInQueueStateCookieRepositoryTest {
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                if (cookieName.endsWith(cookieKey)) {
+            public String getCookie(String name) {
+                if (name.endsWith(cookieKey)) {
                     return cookieValue;
                 }
                 return null;
@@ -420,12 +430,12 @@ public class UserInQueueStateCookieRepositoryTest {
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
             }
 
             @Override
-            public String getCookie(String cookieName) {
-                if (cookieName.endsWith(cookieKey)) {
+            public String getCookie(String name) {
+                if (name.endsWith(cookieKey)) {
                     return cookieValue;
                 }
                 return null;
@@ -445,11 +455,11 @@ public class UserInQueueStateCookieRepositoryTest {
         ICookieManager cookieManager = new ICookieManager() {
 
             @Override
-            public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+            public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
             }
 
             @Override
-            public String getCookie(String cookieName) {
+            public String getCookie(String name) {
                 return null;
             }
         };

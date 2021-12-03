@@ -38,7 +38,7 @@ public class KnownUser {
 
     public static RequestValidationResult validateRequestByIntegrationConfig(String currentUrlWithoutQueueITToken,
             String queueitToken, CustomerIntegration customerIntegrationInfo, String customerId,
-            HttpServletRequest request, HttpServletResponse response, String secretKey) throws Exception {
+            KnownUserRequestWrapper request, HttpServletResponse response, String secretKey) throws Exception {
 
         Map<String, String> debugEntries = new HashMap<String, String>();
 
@@ -255,8 +255,14 @@ public class KnownUser {
         return result;
     }
 
-    public static void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain,
-            HttpServletRequest request, HttpServletResponse response, String secretKey) throws Exception {
+    public static void extendQueueCookie(String eventId,
+                                         int cookieValidityMinute,
+                                         String cookieDomain,
+                                         Boolean isCookieHttpOnly,
+                                         Boolean isCookieSecure,
+                                         HttpServletRequest request,
+                                         HttpServletResponse response,
+                                         String secretKey) throws Exception {
 
         if (Utils.isNullOrWhiteSpace(eventId)) {
             throw new Exception("eventId can not be null or empty.");
@@ -269,7 +275,7 @@ public class KnownUser {
         }
 
         IUserInQueueService userInQueueService = getUserInQueueService(request, response);
-        userInQueueService.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
+        userInQueueService.extendQueueCookie(eventId, cookieValidityMinute, cookieDomain, isCookieHttpOnly, isCookieSecure, secretKey);
     }
 
     private static void setDebugCookie(Map<String, String> debugEntries, HttpServletRequest request,
@@ -287,7 +293,7 @@ public class KnownUser {
         if (!"".equals(cookieValue)) {
             cookieValue = cookieValue.substring(0, cookieValue.length() - 1); // remove trailing char
         }
-        cookieManager.setCookie(QueueITDebugKey, cookieValue, null, null);
+        cookieManager.setCookie(QueueITDebugKey, cookieValue, null, null, false, false);
     }
 
     private static void logMoreRequestDetails(Map<String, String> debugEntries, HttpServletRequest request) {
@@ -339,6 +345,8 @@ public class KnownUser {
         queueConfig.setLayoutName(matchedConfig.LayoutName);
         queueConfig.setCookieValidityMinute(matchedConfig.CookieValidityMinute);
         queueConfig.setCookieDomain(matchedConfig.CookieDomain);
+        queueConfig.setIsCookieHttpOnly(matchedConfig.IsCookieHttpOnly);
+        queueConfig.setIsCookieSecure(matchedConfig.IsCookieSecure);
         queueConfig.setVersion(customerIntegrationInfo.Version);
         queueConfig.setActionName(matchedConfig.Name);
 
@@ -355,6 +363,8 @@ public class KnownUser {
         cancelConfig.setQueueDomain(matchedConfig.QueueDomain);
         cancelConfig.setEventId(matchedConfig.EventId);
         cancelConfig.setCookieDomain(matchedConfig.CookieDomain);
+        cancelConfig.setIsCookieHttpOnly(matchedConfig.IsCookieHttpOnly);
+        cancelConfig.setIsCookieSecure(matchedConfig.IsCookieSecure);
         cancelConfig.setVersion(customerIntegrationInfo.Version);
         cancelConfig.setActionName(matchedConfig.Name);
 
@@ -397,9 +407,9 @@ public class KnownUser {
 
 interface ICookieManager {
 
-    void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain);
+    void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure);
 
-    String getCookie(String cookieName);
+    String getCookie(String name);
 }
 
 class CookieManager implements ICookieManager {
@@ -413,32 +423,35 @@ class CookieManager implements ICookieManager {
     }
 
     @Override
-    public void setCookie(String cookieName, String cookieValue, Integer expiration, String cookieDomain) {
+    public void setCookie(String name, String value, Integer expiration, String domain, Boolean isHttpOnly, Boolean isSecure) {
         if (response == null) {
             return;
         }
 
-        Cookie cookie = new Cookie(cookieName, cookieValue);
-        if (cookieValue == null) {
-            cookieValue = "";
+        Cookie cookie = new Cookie(name, value);
+        if (value == null) {
+            value = "";
         }
         try {
-            cookie.setValue(URLEncoder.encode(cookieValue, "UTF-8"));
+            cookie.setValue(URLEncoder.encode(value, "UTF-8"));
         } catch (UnsupportedEncodingException ex) {
         }
         if (expiration != null) {
             cookie.setMaxAge(expiration);
         }
         cookie.setPath("/");
-        if (!Utils.isNullOrWhiteSpace(cookieDomain)) {
-            cookie.setDomain(cookieDomain);
+        if (!Utils.isNullOrWhiteSpace(domain)) {
+            cookie.setDomain(domain);
         }
+
+        cookie.setHttpOnly(Boolean.TRUE.equals(isHttpOnly));
+        cookie.setSecure(Boolean.TRUE.equals(isSecure));
 
         response.addCookie(cookie);
     }
 
     @Override
-    public String getCookie(String cookieName) {
+    public String getCookie(String name) {
         if (request == null) {
             return null;
         }
@@ -449,7 +462,7 @@ class CookieManager implements ICookieManager {
         }
 
         for (Cookie cookie : cookies) {
-            if (cookie.getName().equals(cookieName)) {
+            if (cookie.getName().equals(name)) {
                 try {
                     return URLDecoder.decode(cookie.getValue(), "UTF-8");
                 } catch (Exception ex) {

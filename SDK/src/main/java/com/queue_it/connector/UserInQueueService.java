@@ -21,6 +21,8 @@ interface IUserInQueueService {
         String eventId,
         int cookieValidityMinutes,
         String cookieDomain,
+        Boolean isCookieHttpOnly,
+        Boolean isCookieSecure,
         String secretKey);
 
     RequestValidationResult getIgnoreActionResult(String actionName);
@@ -28,7 +30,7 @@ interface IUserInQueueService {
 
 class UserInQueueService implements IUserInQueueService {
 
-    public static final String SDK_VERSION = "v3-java-" + "3.6.2";
+    public static final String SDK_VERSION = "v3-java-" + "3.7.0";
     public final IUserInQueueStateRepository _userInQueueStateRepository;
 
     public UserInQueueService(IUserInQueueStateRepository queueStateRepository) {
@@ -51,8 +53,11 @@ class UserInQueueService implements IUserInQueueService {
                     stateInfo.getQueueId(),
                     null,
                     config.getCookieDomain(),
+                    config.getIsCookieHttpOnly(),
+                    config.getIsCookieSecure(),
                     stateInfo.getRedirectType(),
-                    secretKey);
+                    secretKey
+                );
             }
             return new RequestValidationResult(ActionType.QUEUE_ACTION, config.getEventId(), stateInfo.getQueueId(), null, stateInfo.getRedirectType(), config.getActionName());
         }
@@ -74,7 +79,7 @@ class UserInQueueService implements IUserInQueueService {
         }
 
         if (stateInfo.isFound() && !isTokenValid) {
-            this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain());
+            this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain(),config.getIsCookieHttpOnly(), config.getIsCookieSecure());
         }
 
         return requestValidationResult;
@@ -90,8 +95,9 @@ class UserInQueueService implements IUserInQueueService {
             queueParams.getQueueId(),
             queueParams.getCookieValidityMinutes(),
             config.getCookieDomain(),
-            queueParams.getRedirectType(),
-            secretKey);
+            config.getIsCookieHttpOnly(), config.getIsCookieSecure(), queueParams.getRedirectType(),
+            secretKey
+        );
 
         return new RequestValidationResult(
             ActionType.QUEUE_ACTION,
@@ -187,8 +193,10 @@ class UserInQueueService implements IUserInQueueService {
         String eventId,
         int cookieValidityMinute,
         String cookieDomain,
+        Boolean isCookieHttpOnly,
+        Boolean isCookieSecure,
         String secretKey) {
-        this._userInQueueStateRepository.reissueQueueCookie(eventId, cookieValidityMinute, cookieDomain, secretKey);
+        this._userInQueueStateRepository.reissueQueueCookie(eventId, cookieValidityMinute, cookieDomain, isCookieHttpOnly, isCookieSecure, secretKey);
     }
 
     @Override
@@ -201,8 +209,13 @@ class UserInQueueService implements IUserInQueueService {
         StateInfo state = _userInQueueStateRepository.getState(config.getEventId(), -1, secretKey, false);
 
         if (state.isValid()) {
-            this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain());
-            String uriPath = "cancel/" + customerId + "/" + config.getEventId() + "/";
+            this._userInQueueStateRepository.cancelQueueCookie(config.getEventId(), config.getCookieDomain(), config.getIsCookieHttpOnly(), config.getIsCookieSecure());
+            String uriPath = "cancel/" + customerId + "/" + config.getEventId();
+
+            String queueId = state.getQueueId();
+            if(queueId != null && !queueId.trim().isEmpty()) {
+                uriPath += "/" + queueId;
+            }
 
             String query = getQueryString(customerId, config.getEventId(), config.getVersion(), config.getActionName(), null, null);
 

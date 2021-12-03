@@ -1,17 +1,18 @@
 package com.queue_it.connector.integrationconfig;
 
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+
+import com.queue_it.connector.KnownUserRequestWrapper;
 
 interface IIntegrationEvaluator {
 
     IntegrationConfigModel getMatchedIntegrationConfig(
             CustomerIntegration customerIntegration,
             String currentPageUrl,
-            HttpServletRequest request) throws Exception;
+            KnownUserRequestWrapper request) throws Exception;
 }
 
 public class IntegrationEvaluator implements IIntegrationEvaluator {
@@ -20,7 +21,7 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     public IntegrationConfigModel getMatchedIntegrationConfig(
             CustomerIntegration customerIntegration,
             String currentPageUrl,
-            HttpServletRequest request) throws Exception {
+            KnownUserRequestWrapper request) throws Exception {
 
         if (request == null) {
             throw new Exception("request is null");
@@ -39,7 +40,7 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
     private boolean evaluateTrigger(
             TriggerModel trigger,
             String currentPageUrl,
-            HttpServletRequest request) {
+            KnownUserRequestWrapper request) {
         if (trigger.LogicalOperator.equals(LogicalOperatorType.OR)) {
             for (TriggerPart part : trigger.TriggerParts) {
                 if (evaluateTriggerPart(part, currentPageUrl, request)) {
@@ -57,7 +58,7 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
         }
     }
 
-    private boolean evaluateTriggerPart(TriggerPart triggerPart, String currentPageUrl, HttpServletRequest request) {
+    private boolean evaluateTriggerPart(TriggerPart triggerPart, String currentPageUrl, KnownUserRequestWrapper request) {
         if (ValidatorType.URL_VALIDATOR.equals(triggerPart.ValidatorType)) {
             return UrlValidatorHelper.evaluate(triggerPart, currentPageUrl);
         } else if (ValidatorType.COOKIE_VALIDATOR.equals(triggerPart.ValidatorType)) {
@@ -66,6 +67,8 @@ public class IntegrationEvaluator implements IIntegrationEvaluator {
             return UserAgentValidatorHelper.evaluate(triggerPart, request.getHeader("User-Agent"));
         } else if (ValidatorType.HTTPHEADER_VALIDATOR.equals(triggerPart.ValidatorType)) {
             return HttpHeaderValidatorHelper.evaluate(triggerPart, request);
+        } else if (ValidatorType.REQUESTBODY_VALIDATOR.equals(triggerPart.ValidatorType)) {
+            return RequestBodyValidatorHelper.evaluate(triggerPart, request);
         } else {
             return false;
         }
@@ -151,6 +154,19 @@ final class HttpHeaderValidatorHelper {
                 request.getHeader(triggerPart.HttpHeaderName),
                 triggerPart.ValueToCompare,
                 triggerPart.ValuesToCompare);
+    }
+}
+
+final class RequestBodyValidatorHelper {
+
+    public static boolean evaluate(TriggerPart triggerPart, KnownUserRequestWrapper request) {
+        String requestsBodyString = request.GetRequestBodyAsString();
+        return ComparisonOperatorHelper.evaluate(triggerPart.Operator,
+            triggerPart.IsNegative,
+            triggerPart.IsIgnoreCase,
+            (requestsBodyString == null || requestsBodyString.isEmpty()) ? "" : requestsBodyString,
+            triggerPart.ValueToCompare,
+            triggerPart.ValuesToCompare);
     }
 }
 

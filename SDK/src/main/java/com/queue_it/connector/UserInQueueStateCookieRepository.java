@@ -5,12 +5,14 @@ import java.util.HashMap;
 interface IUserInQueueStateRepository {
 
     void store(
-            String eventId,
-            String queueId,
-            Integer fixedCookieValidityMinutes,
-            String cookieDomain,
-            String redirectType,
-            String secretKey) throws Exception;
+        String eventId,
+        String queueId,
+        Integer fixedCookieValidityMinutes,
+        String cookieDomain,
+        Boolean isCookieHttpOnly,
+        Boolean isCookieSecure,
+        String redirectType,
+        String secretKey) throws Exception;
 
     StateInfo getState(String eventId,
             int cookieValidityMinutes,
@@ -19,13 +21,17 @@ interface IUserInQueueStateRepository {
 
     void cancelQueueCookie(
             String eventId,
-            String cookieDomain);
+            String cookieDomain,
+            Boolean isCookieHttpOnly,
+            Boolean isCookieSecure);
 
     void reissueQueueCookie(
-            String eventId,
-            int cookieValidityMinutes,
-            String cookieDomain,
-            String secretKey);
+        String eventId,
+        int cookieValidityMinutes,
+        String cookieDomain,
+        Boolean isCookieHttpOnly,
+        Boolean isCookieSecure,
+        String secretKey);
 }
 
 class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
@@ -49,18 +55,20 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
 
     @Override
     public void store(
-            String eventId,
-            String queueId,
-            Integer fixedCookieValidityMinutes,
-            String cookieDomain,
-            String redirectType,
-            String secretKey) throws Exception {
+        String eventId,
+        String queueId,
+        Integer fixedCookieValidityMinutes,
+        String cookieDomain,
+        Boolean isCookieHttpOnly,
+        Boolean isCookieSecure,
+        String redirectType,
+        String secretKey) throws Exception {
 
         String cookieKey = getCookieKey(eventId);
 
         String cookieValue = createCookieValue(eventId, queueId, fixedCookieValidityMinutes, redirectType, secretKey);
 
-        this.cookieManager.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain);
+        this.cookieManager.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain, isCookieHttpOnly, isCookieSecure);
     }
 
     private String createCookieValue(String eventId, String queueId, Integer fixedCookieValidityMinutes, String redirectType, String secretKey) throws Exception {
@@ -175,17 +183,19 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
     @Override
     public void cancelQueueCookie(
             String eventId,
-            String cookieDomain) {
+            String cookieDomain,
+            Boolean isCookieHttpOnly,
+            Boolean isCookieSecure) {
         String cookieKey = getCookieKey(eventId);
-        cookieManager.setCookie(cookieKey, null, 0, cookieDomain);
+        cookieManager.setCookie(cookieKey, null, 0, cookieDomain, isCookieHttpOnly, isCookieSecure);
     }
 
     @Override
     public void reissueQueueCookie(
-            String eventId,
-            int cookieValidityMinutes,
-            String cookieDomain,
-            String secretKey) {
+        String eventId,
+        int cookieValidityMinutes,
+        String cookieDomain,
+        Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
         try {
             String cookieKey = getCookieKey(eventId);
             String cookieValueOld = this.cookieManager.getCookie(cookieKey);
@@ -202,7 +212,7 @@ class UserInQueueStateCookieRepository implements IUserInQueueStateRepository {
             }
             String cookieValue = createCookieValue(eventId, cookieNameValueMap.get(QUEUE_ID_KEY),
                     fixedCookieValidityMinutes, cookieNameValueMap.get(REDIRECT_TYPE_KEY), secretKey);
-            this.cookieManager.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain);
+            this.cookieManager.setCookie(cookieKey, cookieValue, 24 * 60 * 60, cookieDomain, isCookieHttpOnly, isCookieSecure);
 
         } catch (Exception ex) {
         }

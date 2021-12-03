@@ -39,17 +39,17 @@ public class KnownUserTest {
 
     static class UserInQueueServiceMock implements IUserInQueueService {
 
-        public ArrayList<ArrayList<String>> validateQueueRequestCalls = new ArrayList<>();
+        public ArrayList<ArrayList<String>> validateQueueRequestCalls = new ArrayList<ArrayList<String>>();
         public boolean validateQueueRequestRaiseException = false;
-        public ArrayList<ArrayList<String>> validateCancelRequestCalls = new ArrayList<>();
+        public ArrayList<ArrayList<String>> validateCancelRequestCalls = new ArrayList<ArrayList<String>>();
         public boolean validateCancelRequestRaiseException = false;
-        public ArrayList<ArrayList<String>> extendQueueCookieCalls = new ArrayList<>();
-        public ArrayList<ArrayList<String>> getIgnoreActionResultCalls = new ArrayList<>();
+        public ArrayList<ArrayList<String>> extendQueueCookieCalls = new ArrayList<ArrayList<String>>();
+        public ArrayList<ArrayList<String>> getIgnoreActionResultCalls = new ArrayList<ArrayList<String>>();
 
         @Override
         public RequestValidationResult validateQueueRequest(String targetUrl, String queueitToken,
                                                             QueueEventConfig config, String customerId, String secretKey) throws Exception {
-            ArrayList<String> args = new ArrayList<>();
+            ArrayList<String> args = new ArrayList<String>();
             args.add(targetUrl);
             args.add(queueitToken);
             args.add(config.getCookieDomain() + ":" + config.getLayoutName() + ":" + config.getCulture() + ":"
@@ -70,7 +70,7 @@ public class KnownUserTest {
         public RequestValidationResult validateCancelRequest(String targetUrl, CancelEventConfig config,
                                                              String customerId, String secretKey) throws Exception {
 
-            ArrayList<String> args = new ArrayList<>();
+            ArrayList<String> args = new ArrayList<String>();
             args.add(targetUrl);
             args.add(config.getCookieDomain() + ":" + config.getEventId() + ":" + config.getQueueDomain() + ":"
                     + config.getVersion() + ":" + config.getActionName());
@@ -86,18 +86,20 @@ public class KnownUserTest {
         }
 
         @Override
-        public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, String secretKey) {
-            ArrayList<String> args = new ArrayList<>();
+        public void extendQueueCookie(String eventId, int cookieValidityMinute, String cookieDomain, Boolean isCookieHttpOnly, Boolean isCookieSecure, String secretKey) {
+            ArrayList<String> args = new ArrayList<String>();
             args.add(eventId);
             args.add(Integer.toString(cookieValidityMinute));
             args.add(cookieDomain);
             args.add(secretKey);
+            args.add(Boolean.toString(isCookieHttpOnly));
+            args.add(Boolean.toString(isCookieSecure));
             extendQueueCookieCalls.add(args);
         }
 
         @Override
         public RequestValidationResult getIgnoreActionResult(String actionName) {
-            ArrayList<String> args = new ArrayList<>();
+            ArrayList<String> args = new ArrayList<String>();
             args.add(actionName);
             getIgnoreActionResultCalls.add(args);
             return new RequestValidationResult("Ignore", "", "", "", "", "");
@@ -347,7 +349,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.extendQueueCookie(null, 0, null, null, null, null);
+            KnownUser.extendQueueCookie(null, 0, null, null, null, null, null, null);
         } catch (Exception ex) {
             exceptionWasThrown = "eventId can not be null or empty.".equals(ex.getMessage());
         }
@@ -366,7 +368,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.extendQueueCookie("eventId", 0, null, null, null, null);
+            KnownUser.extendQueueCookie("eventId", 0, null, null, null, null, null,null);
         } catch (Exception ex) {
             exceptionWasThrown = "cookieValidityMinute should be greater than 0.".equals(ex.getMessage());
         }
@@ -385,7 +387,7 @@ public class KnownUserTest {
 
         // Act
         try {
-            KnownUser.extendQueueCookie("eventId", 20, null, null, null, null);
+            KnownUser.extendQueueCookie("eventId", 20, null, null, null, null, null,null);
         } catch (Exception ex) {
             exceptionWasThrown = "secretKey can not be null or empty.".equals(ex.getMessage());
         }
@@ -402,13 +404,15 @@ public class KnownUserTest {
         KnownUser.setUserInQueueService(mock);
 
         // Act
-        KnownUser.extendQueueCookie("eventId", 20, "cookieDomain", null, null, "secretKey");
+        KnownUser.extendQueueCookie("eventId", 20, "cookieDomain", true, false, null, null, "secretKey");
 
         // Assert
         assertEquals("eventId", mock.extendQueueCookieCalls.get(0).get(0));
         assertEquals("20", mock.extendQueueCookieCalls.get(0).get(1));
         assertEquals("cookieDomain", mock.extendQueueCookieCalls.get(0).get(2));
         assertEquals("secretKey", mock.extendQueueCookieCalls.get(0).get(3));
+        assertTrue(Boolean.parseBoolean(mock.extendQueueCookieCalls.get(0).get(4)));
+        assertFalse(Boolean.parseBoolean(mock.extendQueueCookieCalls.get(0).get(5)));
     }
 
     @Test
@@ -714,7 +718,7 @@ public class KnownUserTest {
         // Act
         try {
             KnownUser.validateRequestByIntegrationConfig("currentUrl", "queueitToken", null, null,
-                    new HttpServletRequestMock(), null, null);
+                    new KnownUserRequestWrapper(new HttpServletRequestMock()), null, null);
         } catch (Exception ex) {
             exceptionWasThrown = "customerIntegrationInfo can not be null.".equals(ex.getMessage());
         }
@@ -766,12 +770,13 @@ public class KnownUserTest {
         CustomerIntegration customerIntegration = new CustomerIntegration();
         customerIntegration.Integrations = new IntegrationConfigModel[]{config};
         customerIntegration.Version = 3;
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.UserAgent = "googlebot";
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.UserAgent = "googlebot";
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         // Act
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                "queueitToken", customerIntegration, "customerId", httpContextMock, null, "secretKey");
+                "queueitToken", customerIntegration, "customerId", wrappedRequest, null, "secretKey");
 
         // Assert
         assertEquals(1, mock.validateQueueRequestCalls.size());
@@ -829,10 +834,11 @@ public class KnownUserTest {
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.UserAgent = "googlebot";
         requestMock.Headers.put("x-queueit-ajaxpageurl", "http%3A%2F%2Furl");
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         // Act
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                "queueitToken", customerIntegration, "customerId", requestMock, null, "secretKey");
+                "queueitToken", customerIntegration, "customerId", wrappedRequest, null, "secretKey");
 
         // Assert
         assertEquals(1, mock.validateQueueRequestCalls.size());
@@ -891,6 +897,7 @@ public class KnownUserTest {
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.UserAgent = "googlebot";
         requestMock.RequestURL = "requestUrl";
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
@@ -901,7 +908,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "eventId", true, 20, secretKey, "debug");
 
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
+                queueittoken, customerIntegration, "customerId", wrappedRequest, responseMock, secretKey);
 
         // Assert
         assertEquals(1, responseMock.addedCookies.size());
@@ -936,7 +943,7 @@ public class KnownUserTest {
 
         // Act
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
+                "queueitToken", customerIntegration, "customerId", new KnownUserRequestWrapper(new HttpServletRequestMock()), null, "secretKey");
 
         // Assert
         assertTrue(mock.validateQueueRequestCalls.isEmpty());
@@ -961,6 +968,7 @@ public class KnownUserTest {
         requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
         requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
         requestMock.Headers.put("x-forwarded-proto", "https");
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
@@ -971,7 +979,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "eventId", true, 20, secretKey, "debug");
 
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", queueittoken, customerIntegration,
-                "customerId", requestMock, responseMock, secretKey);
+                "customerId", wrappedRequest, responseMock, secretKey);
 
         // Assert
         assertEquals(1, responseMock.addedCookies.size());
@@ -1028,7 +1036,7 @@ public class KnownUserTest {
 
         // Act
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration,
-                "customerId", new HttpServletRequestMock(), null, "secretKey");
+                "customerId", new KnownUserRequestWrapper(new HttpServletRequestMock()), null, "secretKey");
 
         // Assert
         assertEquals(1, mock.validateQueueRequestCalls.size());
@@ -1073,7 +1081,7 @@ public class KnownUserTest {
 
         // Act
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration,
-                "customerId", new HttpServletRequestMock(), null, "secretKey");
+                "customerId", new KnownUserRequestWrapper(new HttpServletRequestMock()), null, "secretKey");
 
         // Assert
         assertEquals(1, mock.validateQueueRequestCalls.size());
@@ -1117,7 +1125,7 @@ public class KnownUserTest {
 
         // Act
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", "queueitToken", customerIntegration,
-                "customerId", new HttpServletRequestMock(), null, "secretKey");
+                "customerId", new KnownUserRequestWrapper(new HttpServletRequestMock()), null, "secretKey");
 
         // Assert
         assertEquals(1, mock.validateQueueRequestCalls.size());
@@ -1156,7 +1164,7 @@ public class KnownUserTest {
 
         // Act
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
+                "queueitToken", customerIntegration, "customerId", new KnownUserRequestWrapper(new HttpServletRequestMock()), null, "secretKey");
 
         // Assert
         assertEquals(1, mock.getIgnoreActionResultCalls.size());
@@ -1194,13 +1202,14 @@ public class KnownUserTest {
 
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.Headers.put("x-queueit-ajaxpageurl", "url");
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
 
         // Act
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                "queueitToken", customerIntegration, "customerId", requestMock, null, "secretKey");
+                "queueitToken", customerIntegration, "customerId", wrappedRequest, null, "secretKey");
 
         // Assert
         assertEquals(1, mock.getIgnoreActionResultCalls.size());
@@ -1240,7 +1249,7 @@ public class KnownUserTest {
 
         // Act
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                "queueitToken", customerIntegration, "customerId", new HttpServletRequestMock(), null, "secretKey");
+                "queueitToken", customerIntegration, "customerId", new KnownUserRequestWrapper(new HttpServletRequestMock()), null, "secretKey");
 
         // Assert
         assertEquals("http://test.com?event1=true", mock.validateCancelRequestCalls.get(0).get(0));
@@ -1279,13 +1288,14 @@ public class KnownUserTest {
 
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
         requestMock.Headers.put("x-queueit-ajaxpageurl", "http%3A%2F%2Furl");
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
 
         // Act
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                "queueitToken", customerIntegration, "customerId", requestMock, null, "secretKey");
+                "queueitToken", customerIntegration, "customerId", wrappedRequest, null, "secretKey");
 
         // Assert
         assertEquals("http://url", mock.validateCancelRequestCalls.get(0).get(0));
@@ -1340,6 +1350,7 @@ public class KnownUserTest {
         requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
         requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
         requestMock.Headers.put("x-forwarded-proto", "https");
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
@@ -1350,7 +1361,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "eventId", true, 20, secretKey, "debug");
 
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
+                queueittoken, customerIntegration, "customerId", wrappedRequest, responseMock, secretKey);
 
         // Assert
         assertEquals(1, responseMock.addedCookies.size());
@@ -1393,6 +1404,7 @@ public class KnownUserTest {
         requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
         requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
         requestMock.Headers.put("x-forwarded-proto", "https");
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
         // endregion
 
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
@@ -1404,7 +1416,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "event1", true, null, secretKey, "debug");
 
         KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
+                queueittoken, customerIntegration, "customerId", wrappedRequest, responseMock, secretKey);
 
         // Assert
         assertEquals(1, responseMock.addedCookies.size());
@@ -1464,8 +1476,9 @@ public class KnownUserTest {
         customerIntegration.Version = 3;
         //endregion
 
-        HttpServletRequestMock httpContextMock = new HttpServletRequestMock();
-        httpContextMock.UserAgent = "googlebot";
+        HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        requestMock.UserAgent = "googlebot";
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
@@ -1474,7 +1487,7 @@ public class KnownUserTest {
         // Act
         try {
             KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                    "queueitToken", customerIntegration, "customerId", httpContextMock, responseMock, "secretKey");
+                    "queueitToken", customerIntegration, "customerId", wrappedRequest, responseMock, "secretKey");
         } catch (Exception ex) {
             assertEquals("exception", ex.getMessage());
         }
@@ -1584,6 +1597,7 @@ public class KnownUserTest {
         requestMock.Headers.put("x-forwarded-for", "129.78.138.66, 129.78.64.103");
         requestMock.Headers.put("x-forwarded-host", "en.wikipedia.org:8080");
         requestMock.Headers.put("x-forwarded-proto", "https");
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
@@ -1595,7 +1609,7 @@ public class KnownUserTest {
 
         try {
             KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true", queueittoken, null,
-                    "customerId", requestMock, responseMock, secretKey);
+                    "customerId", wrappedRequest, responseMock, secretKey);
         } catch (Exception ex) {
             exceptionWasThrown = "customerIntegrationInfo can not be null.".equals(ex.getMessage());
         }
@@ -1623,6 +1637,7 @@ public class KnownUserTest {
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
@@ -1637,7 +1652,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "event1", true, null, secretKey, "debug");
 
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                queueittoken, customerIntegration, null, requestMock, responseMock, secretKey);
+                queueittoken, customerIntegration, null, wrappedRequest, responseMock, secretKey);
 
         // Assert
         assertEquals("https://api2.queue-it.net/diagnostics/connector/error/?code=setup", result.getRedirectUrl());
@@ -1651,6 +1666,7 @@ public class KnownUserTest {
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
@@ -1665,7 +1681,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "event1", true, null, secretKey, "debug");
 
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                queueittoken, customerIntegration, "customerId", requestMock, responseMock, null);
+                queueittoken, customerIntegration, "customerId", wrappedRequest, responseMock, null);
 
         // Assert
         assertEquals("https://api2.queue-it.net/diagnostics/connector/error/?code=setup", result.getRedirectUrl());
@@ -1680,6 +1696,7 @@ public class KnownUserTest {
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
@@ -1694,7 +1711,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "event1", true, null, secretKey, "debug");
 
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
+                queueittoken, customerIntegration, "customerId", wrappedRequest, responseMock, secretKey);
 
         // Assert
         assertEquals("https://customerId.api2.queue-it.net/customerId/diagnostics/connector/error/?code=timestamp", result.getRedirectUrl());
@@ -1708,6 +1725,7 @@ public class KnownUserTest {
         HttpServletResponseMock responseMock = new HttpServletResponseMock();
 
         HttpServletRequestMock requestMock = new HttpServletRequestMock();
+        KnownUserRequestWrapper wrappedRequest = new KnownUserRequestWrapper(requestMock);
 
         UserInQueueServiceMock mock = new UserInQueueServiceMock();
         KnownUser.setUserInQueueService(mock);
@@ -1722,7 +1740,7 @@ public class KnownUserTest {
         String queueittoken = UserInQueueServiceTest.QueueITTokenGenerator.generateToken(date, "event1", true, null, secretKey, "debug") + "invalid-hash";
 
         RequestValidationResult result = KnownUser.validateRequestByIntegrationConfig("http://test.com?event1=true",
-                queueittoken, customerIntegration, "customerId", requestMock, responseMock, secretKey);
+                queueittoken, customerIntegration, "customerId", wrappedRequest, responseMock, secretKey);
 
         // Assert
         assertEquals("https://customerId.api2.queue-it.net/customerId/diagnostics/connector/error/?code=hash", result.getRedirectUrl());
@@ -1753,6 +1771,8 @@ public class KnownUserTest {
         eventConfig.setCulture("culture");
         eventConfig.setEventId("eventId");
         eventConfig.setQueueDomain("queueDomain");
+        eventConfig.setIsCookieHttpOnly(true);
+        eventConfig.setIsCookieSecure(false);
         eventConfig.setExtendCookieValidity(true);
         eventConfig.setCookieValidityMinute(10);
         eventConfig.setVersion(12);
@@ -1775,7 +1795,7 @@ public class KnownUserTest {
                 decodedCookieValue.contains("OriginalUrl=http://test.com/?event1=true&queueittoken=queueittokenvalue"));
         assertTrue(decodedCookieValue.contains("TargetUrl=http://test.com?event1=true"));
         assertTrue(decodedCookieValue.contains(
-                "QueueConfig=EventId:eventId&Version:12&QueueDomain:queueDomain&CookieDomain:cookieDomain&ExtendCookieValidity:true&CookieValidityMinute:10&LayoutName:layoutName&Culture:culture&ActionName:"
+                "QueueConfig=EventId:eventId&Version:12&QueueDomain:queueDomain&CookieDomain:cookieDomain&IsCookieHttpOnly:true&IsCookieSecure:false&ExtendCookieValidity:true&CookieValidityMinute:10&LayoutName:layoutName&Culture:culture&ActionName:"
                         + eventConfig.getActionName()));
         assertTrue(decodedCookieValue.contains("SdkVersion=" + UserInQueueService.SDK_VERSION));
         assertTrue(decodedCookieValue.contains("Runtime=" + GetRuntimeVersion()));
@@ -2009,6 +2029,8 @@ public class KnownUserTest {
         cancelEventConfig.setQueueDomain("queuedomain");
         cancelEventConfig.setVersion(12);
         cancelEventConfig.setActionName("cancelAction");
+        cancelEventConfig.setIsCookieHttpOnly(true);
+        cancelEventConfig.setIsCookieSecure(false);
 
         // Act
         String secretKey = "secretkey";
@@ -2027,7 +2049,7 @@ public class KnownUserTest {
                 decodedCookieValue.contains("OriginalUrl=http://test.com/?event1=true&queueittoken=queueittokenvalue"));
         assertTrue(decodedCookieValue.contains("TargetUrl=http://test.com?event1=true"));
 
-        String configvalues = "CancelConfig=EventId:eventId&Version:12&QueueDomain:queuedomain&CookieDomain:cookiedomain&ActionName:"
+        String configvalues = "CancelConfig=EventId:eventId&Version:12&QueueDomain:queuedomain&CookieDomain:cookiedomain&IsCookieHttpOnly:true&IsCookieSecure:false&ActionName:"
                 + cancelEventConfig.getActionName();
         assertTrue(decodedCookieValue.contains(configvalues));
     }
@@ -2229,7 +2251,7 @@ public class KnownUserTest {
         public HashMap<String, String> Headers;
 
         public HttpServletRequestMock() {
-            this.Headers = new HashMap<>();
+            this.Headers = new HashMap<String, String>();
         }
 
         @Override
@@ -2575,7 +2597,7 @@ public class KnownUserTest {
 
     static class HttpServletResponseMock implements HttpServletResponse {
 
-        ArrayList<Cookie> addedCookies = new ArrayList<>();
+        ArrayList<Cookie> addedCookies = new ArrayList<Cookie>();
 
         @Override
         public void addCookie(Cookie cookie) {

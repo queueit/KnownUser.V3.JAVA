@@ -14,4 +14,6 @@ public class IntegrationConfigModel {
     public String ForcedTargetUrl;
     public String ActionType;
     public TriggerModel[] Triggers;
+    public Boolean IsCookieHttpOnly;
+    public Boolean IsCookieSecure;
 }

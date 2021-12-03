@@ -13,7 +13,7 @@ You can install this SDK in a couple of ways:
 <dependency>
   <groupId>com.queue-it.connector</groupId>
   <artifactId>connector</artifactId>
-  <version>3.6.2</version>
+  <version>3.7.0</version>
 </dependency>
 ```
 
@@ -23,17 +23,17 @@ The KnownUser validation must be done on all requests except requests for static
 This example is using the *[IntegrationConfigProvider](https://github.com/queueit/KnownUser.V3.JAVA/blob/master/Documentation/IntegrationConfigProvider.java)* to download the queue configuration. The IntegrationConfigProvider.java file is an example of how the download and caching of the configuration can be done. This is just an example, but if you make your own downloader, please cache the result for 5 - 10 minutes to limit number of download requests. **You should NEVER download the configuration as part of the request handling**.
 
 The following method is all that is needed to validate that a user has been through the queue:
-```
-    private void doValidation(HttpServletRequest request, HttpServletResponse response) {
+```java
+    private void doValidation(KnownUserRequestWrapper request, HttpServletResponse response) {
         try {
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
-	    String apiKey = "Your api-key as specified in Go Queue-it self-service platform";
+            String apiKey = "Your api-key as specified in Go Queue-it self-service platform";
 
             String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
-	    
-	    // The pureUrl is used to match Triggers and as the Target url (where to return the users to)
+
+            // The pureUrl is used to match Triggers and as the Target url (where to return the users to)
             // It is therefor important that the pureUrl is exactly the url of the users browsers. So if your webserver is 
             // e.g. behind a load balancer that modifies the host name or port, reformat the pureUrl before proceeding           
             CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId, apiKey);
@@ -51,6 +51,7 @@ The following method is all that is needed to validate that a user has been thro
                 if (validationResult.isAjaxResult) {
                     //In case of ajax call send the user to the queue by sending a custom queue-it header and redirecting user to queue from javascript
                     response.setHeader(validationResult.getAjaxQueueRedirectHeaderKey(), validationResult.getAjaxRedirectUrl());
+                    response.setHeader("Access-Control-Expose-Headers", validationResult.getAjaxQueueRedirectHeaderKey());
                 } else {
                     //Send the user to the queue - either becuase hash was missing or becuase is was invalid
                     response.sendRedirect(validationResult.getRedirectUrl());
@@ -60,16 +61,16 @@ The following method is all that is needed to validate that a user has been thro
             } else {
                 String queryString = request.getQueryString();
                 //Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-		if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && "Queue".equals(validationResult.getActionType()) ) {                
-                    response.sendRedirect(pureUrl);
-                    response.getOutputStream().flush();
-                    response.getOutputStream().close();
+                if (queryString != null && queryString.contains(KnownUser.QueueITTokenKey) && "Queue".equals(validationResult.getActionType()) ) {
+                response.sendRedirect(pureUrl);
+                response.getOutputStream().flush();
+                response.getOutputStream().close();
                 }
             }
         } catch (Exception ex) {
             // There was an error validating the request
             // Use your own logging framework to log the error
-            // This was a configuration error, so we let the user continue
+            // This was a configuration error, so we let the user continue            
         }
     }
     
@@ -90,8 +91,8 @@ Specify the configuration in code without using the Trigger/Action paradigm. In 
 
 The following is an example of how to specify the configuration in code:
  
-```
-    private void doValidationByLocalEventConfig(HttpServletRequest request, HttpServletResponse response) {
+```java
+    private void doValidationByLocalEventConfig(KnownUserRequestWrapper request, HttpServletResponse response) {
         try {
                        
             String customerId = "Your Queue-it customer ID";
@@ -118,9 +119,10 @@ The following is an example of how to specify the configuration in code:
                 response.setHeader("Pragma", "no-cache");
                 response.setHeader("Expires", "Fri, 01 Jan 1990 00:00:00 GMT");
                 //end
-		 if (validationResult.isAjaxResult) {
+            if (validationResult.isAjaxResult) {
                     //In case of ajax call send the user to the queue by sending a custom queue-it header and redirecting user to queue from javascript
                     response.setHeader(validationResult.getAjaxQueueRedirectHeaderKey(), validationResult.getAjaxRedirectUrl());
+                    response.setHeader("Access-Control-Expose-Headers", validationResult.getAjaxQueueRedirectHeaderKey());
                 } else {
                     //Send the user to the queue - either becuase hash was missing or becuase is was invalid
                     response.sendRedirect(validationResult.getRedirectUrl());
@@ -144,3 +146,125 @@ The following is an example of how to specify the configuration in code:
 When users are redirected back from queue-it website they carry a QueueITToken with some information which is used to validate their request by SDK. 
 In specific cases you would like to validate, process or extract specfic parameters you can use QueueParameterHelper class in [KnownUserHelper.java](https://github.com/queueit/KnownUser.V3.JAVA/blob/master/Documentation/KnownUserHelper.java).
 Calling *QueueParameterHelper.getIsTokenValid()* will validate the token and passing QueueITToken to *QueueParameterHelper.extractQueueParams* you will get a QueueUrlParams result containing all parameters found in the token.
+
+## Request body trigger (advanced)
+
+The connector supports triggering on request body content. An example could be a POST call with specific item ID where you want end-users to queue up for.
+For this to work, you will need to enable request body triggers in your integration settings in your GO Queue-it platform account or contact Queue-it support.
+Once enabled you will need to update your integration configuration so request body is available for the connector.
+
+Request body should be provided by the code which is using this SDK. You can read the request body in your code and provide it to the SDK. This should be done using a subclass of KnownUserRequestWrapper (Please take a look at CustomKnownUserRequestWrapper as an example). The subclass should be used instead of HttpServletRequest similar to the below example. Then the request body can be read many times by using GetRequestBodyAsString() mehod.
+
+For the Get requests the KnownUserRequestWrapper could be used directly. 
+
+```java
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+                KnownUserRequestWrapper requestWrapper = new KnownUserRequestWrapper(request);
+                processRequest(requestWrapper, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+                CustomKnownUserRequestWrapper requestWrapper = new CustomKnownUserRequestWrapper(request);
+                processRequest(requestWrapper, response);
+    }
+```
+
+Here is an example of implementing CustomKnownUserRequestWrapper subclass.
+This is just one example of how to read the request body, you could use your own implementation.
+
+
+```java
+public class CustomKnownUserRequestWrapper extends KnownUserRequestWrapper {
+
+    private final String body;
+
+    public CustomKnownUserRequestWrapper(HttpServletRequest request) throws IOException {
+        super(request);
+
+        int maxBytesToRead = 1024 * 50;
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(super.getInputStream()));
+            char[] charBuffer = new char[1024];
+            int bytesRead = -1;
+            while (((bytesRead = bufferedReader.read(charBuffer)) > 0) && stringBuilder.length() <= maxBytesToRead) {
+                stringBuilder.append(charBuffer, 0, bytesRead);
+            }
+        } catch (IOException ex) {
+            throw ex;
+        }
+        body = stringBuilder.toString();
+    }
+
+    @Override
+    public ServletInputStream getInputStream() throws IOException {
+        final byte[] myBytes = body.getBytes("UTF-8");
+        ServletInputStream servletInputStream = new ServletInputStream() {
+            private int lastIndexRetrieved = -1;
+            private ReadListener readListener = null;
+
+            @Override
+            public boolean isFinished() {
+                return (lastIndexRetrieved == myBytes.length - 1);
+            }
+
+            @Override
+            public boolean isReady() {
+                return isFinished();
+            }
+
+            @Override
+            public void setReadListener(ReadListener readListener) {
+                this.readListener = readListener;
+                if (!isFinished()) {
+                    try {
+                        readListener.onDataAvailable();
+                    } catch (IOException e) {
+                        readListener.onError(e);
+                    }
+                } else {
+                    try {
+                        readListener.onAllDataRead();
+                    } catch (IOException e) {
+                        readListener.onError(e);
+                    }
+                }
+            }
+
+            @Override
+            public int read() throws IOException {
+                int i;
+                if (!isFinished()) {
+                    i = myBytes[lastIndexRetrieved + 1];
+                    lastIndexRetrieved++;
+                    if (isFinished() && (readListener != null)) {
+                        try {
+                            readListener.onAllDataRead();
+                        } catch (IOException ex) {
+                            readListener.onError(ex);
+                            throw ex;
+                        }
+                    }
+                    return i;
+                } else {
+                    return -1;
+                }
+            }
+        };
+        return servletInputStream;
+    }
+
+    @Override
+    public BufferedReader getReader() throws IOException {
+        return new BufferedReader(new InputStreamReader(this.getInputStream()));
+    }
+
+    public String GetRequestBodyAsString() {
+        return this.body;
+    }
+}
+```

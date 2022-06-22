@@ -18,7 +18,7 @@ You can install this SDK in a couple of ways:
 ```
 
 ## Implementation
-The KnownUser validation must be done on all requests except requests for static and cached pages, resources like images, css files and .... So, if you add the KnownUser validation logic to a central place, then be sure that the Triggers only fire on page requests (including ajax requests) and not on e.g. image. 
+The KnownUser validation must be done on all requests except requests for static and cached pages, resources like images, CSS files, and .... So, if you add the KnownUser validation logic to a central place, then be sure that the Triggers only fire on page requests (including ajax requests) and not on e.g. image. 
 
 This example is using the *[IntegrationConfigProvider](https://github.com/queueit/KnownUser.V3.JAVA/blob/master/Documentation/IntegrationConfigProvider.java)* to download the queue configuration. The IntegrationConfigProvider.java file is an example of how the download and caching of the configuration can be done. This is just an example, but if you make your own downloader, please cache the result for 5 - 10 minutes to limit number of download requests. **You should NEVER download the configuration as part of the request handling**.
 
@@ -30,11 +30,11 @@ The following method is all that is needed to validate that a user has been thro
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
             String apiKey = "Your api-key as specified in Go Queue-it self-service platform";
 
-            String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
+            String queueitToken = getParameterFromQueryString(request, KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
 
             // The pureUrl is used to match Triggers and as the Target url (where to return the users to)
-            // It is therefor important that the pureUrl is exactly the url of the users browsers. So if your webserver is 
+            // It is therefore important that the pureUrl is exactly the url of the users browsers. So if your webserver is 
             // e.g. behind a load balancer that modifies the host name or port, reformat the pureUrl before proceeding           
             CustomerIntegration integrationConfig = IntegrationConfigProvider.getCachedIntegrationConfig(customerId, apiKey);
 
@@ -84,10 +84,27 @@ The following method is all that is needed to validate that a user has been thro
         String pureUrl = pattern.matcher(url).replaceAll("");
         return pureUrl;
     }
+
+    // Helper to get a parameter from the url query string
+    private String getParameterFromQueryString(KnownUserRequestWrapper request, String key) {
+        String queryString = request.getQueryString();
+        if(key == null || key.isEmpty() || queryString.isEmpty())
+            return "";
+        
+        String[] params = queryString.split("&");
+
+        for (String param : params) {  
+            String[] paramParts = param.split("=");
+            if(paramParts.length >= 0 && paramParts[0].equals(key)){
+                return paramParts[1];
+            }
+        }
+        return "";
+    }
 ```
 
 ## Implementation using inline queue configuration
-Specify the configuration in code without using the Trigger/Action paradigm. In this case it is important *only to queue-up page requests* and not requests for resources. This can be done by adding custom filtering logic before caling the KnownUser.resolveQueueRequestByLocalConfig() method.
+Specify the configuration in code without using the Trigger/Action paradigm. In this case it is important *only to queue-up page requests* and not requests for resources. This can be done by adding custom filtering logic before calling the KnownUser.resolveQueueRequestByLocalConfig() method.
 
 The following is an example of how to specify the configuration in code:
  
@@ -98,7 +115,7 @@ The following is an example of how to specify the configuration in code:
             String customerId = "Your Queue-it customer ID";
             String secretKey = "Your 72 char secrete key as specified in Go Queue-it self-service platform";
 
-            String queueitToken = request.getParameter(KnownUser.QueueITTokenKey);
+            String queueitToken = getParameterFromQueryString(request, KnownUser.QueueITTokenKey);
             String pureUrl = getPureUrl(request);
             
             QueueEventConfig eventConfig = new QueueEventConfig();
@@ -140,11 +157,39 @@ The following is an example of how to specify the configuration in code:
             // This was a configuration error, so we let the user continue     
         }
     }
+
+    // Helper method to get url without token.
+    // It uses patterns which is unsupported in Java 6, so if you are using this version please reach out to us.
+    private String getPureUrl(HttpServletRequest request){
+        Pattern pattern = Pattern.compile("([\\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", Pattern.CASE_INSENSITIVE);
+        String queryString = request.getQueryString();
+        String url = request.getRequestURL().toString() + (queryString != null ? ("?" + queryString) : "");
+
+        String pureUrl = pattern.matcher(url).replaceAll("");
+        return pureUrl;
+    }
+
+    // Helper to get a parameter from the url query string
+    private String getParameterFromQueryString(KnownUserRequestWrapper request, String key) {
+        String queryString = request.getQueryString();
+        if(key == null || key.isEmpty() || queryString.isEmpty())
+            return "";
+        
+        String[] params = queryString.split("&");
+
+        for (String param : params) {  
+            String[] paramParts = param.split("=");
+            if(paramParts.length >= 0 && paramParts[0].equals(key)){
+                return paramParts[1];
+            }
+        }
+        return "";
+    }
 ```
 
 ## Extracting information from QueueITToken
 When users are redirected back from queue-it website they carry a QueueITToken with some information which is used to validate their request by SDK. 
-In specific cases you would like to validate, process or extract specfic parameters you can use QueueParameterHelper class in [KnownUserHelper.java](https://github.com/queueit/KnownUser.V3.JAVA/blob/master/Documentation/KnownUserHelper.java).
+In specific cases you would like to validate, process or extract specific parameters you can use QueueParameterHelper class in [KnownUserHelper.java](https://github.com/queueit/KnownUser.V3.JAVA/blob/master/Documentation/KnownUserHelper.java).
 Calling *QueueParameterHelper.getIsTokenValid()* will validate the token and passing QueueITToken to *QueueParameterHelper.extractQueueParams* you will get a QueueUrlParams result containing all parameters found in the token.
 
 ## Request body trigger (advanced)
@@ -153,24 +198,22 @@ The connector supports triggering on request body content. An example could be a
 For this to work, you will need to enable request body triggers in your integration settings in your GO Queue-it platform account or contact Queue-it support.
 Once enabled you will need to update your integration configuration so request body is available for the connector.
 
-Request body should be provided by the code which is using this SDK. You can read the request body in your code and provide it to the SDK. This should be done using a subclass of KnownUserRequestWrapper (Please take a look at CustomKnownUserRequestWrapper as an example). The subclass should be used instead of HttpServletRequest similar to the below example. Then the request body can be read many times by using GetRequestBodyAsString() mehod.
+Request body should be provided to the queue-it SDK. You can read the request body in your code and provide it to the SDK. This should be done using an instance of KnownUserRequestWrapper (Please take a look at CustomKnownUserRequestWrapper as an example). The class instance should be used similar to the below example. Then the request body can be read many times by using GetRequestBodyAsString() method.
 
 For the Get requests the KnownUserRequestWrapper could be used directly. 
 
 ```java
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-                KnownUserRequestWrapper requestWrapper = new KnownUserRequestWrapper(request);
-                processRequest(requestWrapper, response);
-    }
+    //Use below line if you have a trigger on request body
+    CustomKnownUserRequestWrapper requestWrapper = new CustomKnownUserRequestWrapper((HttpServletRequest) request);
+    
+    //Use below line if you don't have a trigger on request body, or for get requests
+    KnownUserRequestWrapper requestWrapper = new KnownUserRequestWrapper((HttpServletRequest) request);
+    
+    //The requestWrapper object must be passed to the validation function to be investigated by queue-it SDK
+    doValidation(requestWrapper, (HttpServletResponse) response);  
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-                CustomKnownUserRequestWrapper requestWrapper = new CustomKnownUserRequestWrapper(request);
-                processRequest(requestWrapper, response);
-    }
+    //The requestWrapper object must be passed to the filter chain, so the rest of the solution can have access to the body and parameters from the request
+    chain.doFilter(requestWrapper, response);
 ```
 
 Here is an example of implementing CustomKnownUserRequestWrapper subclass.
@@ -180,82 +223,23 @@ This is just one example of how to read the request body, you could use your own
 ```java
 public class CustomKnownUserRequestWrapper extends KnownUserRequestWrapper {
 
-    private final String body;
+    private ByteArrayOutputStream cachedBytes;
+    private String body;
+    private Map<String, String[]> parameterMap;
+    private static int bufferLength = 1024 * 50;
 
     public CustomKnownUserRequestWrapper(HttpServletRequest request) throws IOException {
         super(request);
 
-        int maxBytesToRead = 1024 * 50;
-        StringBuilder stringBuilder = new StringBuilder();
-        try {
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(super.getInputStream()));
-            char[] charBuffer = new char[1024];
-            int bytesRead = -1;
-            while (((bytesRead = bufferedReader.read(charBuffer)) > 0) && stringBuilder.length() <= maxBytesToRead) {
-                stringBuilder.append(charBuffer, 0, bytesRead);
-            }
-        } catch (IOException ex) {
-            throw ex;
-        }
-        body = stringBuilder.toString();
+        cacheBodyAsString();
+        
+        parameterMap = new HashMap<>(super.getParameterMap());
+        addParametersFromBody();
     }
 
     @Override
     public ServletInputStream getInputStream() throws IOException {
-        final byte[] myBytes = body.getBytes("UTF-8");
-        ServletInputStream servletInputStream = new ServletInputStream() {
-            private int lastIndexRetrieved = -1;
-            private ReadListener readListener = null;
-
-            @Override
-            public boolean isFinished() {
-                return (lastIndexRetrieved == myBytes.length - 1);
-            }
-
-            @Override
-            public boolean isReady() {
-                return isFinished();
-            }
-
-            @Override
-            public void setReadListener(ReadListener readListener) {
-                this.readListener = readListener;
-                if (!isFinished()) {
-                    try {
-                        readListener.onDataAvailable();
-                    } catch (IOException e) {
-                        readListener.onError(e);
-                    }
-                } else {
-                    try {
-                        readListener.onAllDataRead();
-                    } catch (IOException e) {
-                        readListener.onError(e);
-                    }
-                }
-            }
-
-            @Override
-            public int read() throws IOException {
-                int i;
-                if (!isFinished()) {
-                    i = myBytes[lastIndexRetrieved + 1];
-                    lastIndexRetrieved++;
-                    if (isFinished() && (readListener != null)) {
-                        try {
-                            readListener.onAllDataRead();
-                        } catch (IOException ex) {
-                            readListener.onError(ex);
-                            throw ex;
-                        }
-                    }
-                    return i;
-                } else {
-                    return -1;
-                }
-            }
-        };
-        return servletInputStream;
+        return new CachedServletInputStream(cachedBytes.toByteArray());
     }
 
     @Override
@@ -265,6 +249,88 @@ public class CustomKnownUserRequestWrapper extends KnownUserRequestWrapper {
 
     public String GetRequestBodyAsString() {
         return this.body;
+    }
+    
+    @Override
+    public String getParameter(String key) {
+        Map<String, String[]> parameterMap = getParameterMap();
+        String[] values = parameterMap.get(key);
+        return values != null && values.length > 0 ? values[0] : null;
+    }
+
+    @Override
+    public String[] getParameterValues(String key) {
+        Map<String, String[]> parameterMap = getParameterMap();
+        return parameterMap.get(key);
+    }
+
+    @Override
+    public Map<String, String[]> getParameterMap() {
+        return parameterMap;
+    }
+    
+    private void cacheInputStream() throws IOException {
+        cachedBytes = new ByteArrayOutputStream();
+
+        byte[] buffer = new byte[bufferLength];
+        int length;
+        InputStream is = super.getInputStream();
+        while ((length = is.read(buffer)) != -1) {
+            cachedBytes.write(buffer, 0, length);
+        }
+    }
+    
+    private void cacheBodyAsString() throws IOException {
+        if (cachedBytes == null)
+            cacheInputStream();
+        
+        String encoding = super.getCharacterEncoding();
+        this.body = cachedBytes.toString(encoding != null ? encoding : "UTF-8");
+    }
+    
+    private void addParametersFromBody() {
+        if(this.body == null || this.body.isEmpty())
+            return;
+        
+        String[] params = this.body.split("&");
+
+        String[] value = new String[1];
+        for (String param : params) {  
+            String[] paramParts = param.split("=");
+            if(paramParts.length >= 0 && paramParts[0] != null){
+                value[0] = paramParts[1];
+                parameterMap.putIfAbsent(paramParts[0], value);
+            }
+        }
+
+    }
+    
+    class CachedServletInputStream extends ServletInputStream {
+        private final ByteArrayInputStream buffer;
+        
+        public CachedServletInputStream(byte[] contents) {
+            this.buffer = new ByteArrayInputStream(contents);
+        }
+        
+        @Override
+        public int read() {
+            return buffer.read();
+        }
+
+        @Override
+        public boolean isFinished() {
+            return buffer.available() == 0;
+        }
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setReadListener(ReadListener listener) {
+            throw new RuntimeException("Not implemented");
+        }
     }
 }
 ```
